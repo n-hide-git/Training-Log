@@ -146,6 +146,8 @@ button { cursor: pointer; }
 /* 2026.11.13 変更：バージョン表示（日付の右横） */
 #infoHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 #ver { color: #9aa6b5; font-size: 12px; white-space: nowrap; }
+/* 2026.11.13 Ver.2.6.5：ページが無い時もバージョンを表示 */
+#emptyVer { display: block; margin-top: 24px; text-align: right; color: #9aa6b5; font-size: 12px; }
 #infoPractice { font-size: 20px; font-weight: 750; letter-spacing: .01em; margin: 4px 0 8px; word-break: break-word; color: #20384c; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 14px; }
@@ -769,6 +771,10 @@ body.numpad .ebtns .btn.primary { display: none; }
     $('entryForm').querySelectorAll('textarea,button').forEach(function (e) { e.disabled = !p; });
     if (!p) {
       empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のノートを作成できます。';
+      // 2026.11.13 Ver.2.6.5：ページが無い時もバージョンを表示
+      var ev = el('span', '', $('ver').textContent);
+      ev.id = 'emptyVer';
+      empty.appendChild(ev);
       return;
     }
     $('infoDate').textContent = formatDate(p.date);
