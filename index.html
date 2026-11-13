@@ -264,7 +264,7 @@ body.numpad .ebtns .btn.primary { display: none; }
   <div id="empty">まだ記録がありません。<br>「＋新規」から練習ページを作成してください。</div>
   <section id="info" hidden>
     <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.1.0 　nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.1.1 nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -875,6 +875,13 @@ body.numpad .ebtns .btn.primary { display: none; }
   });
 
   // page が null なら新規作成、ページを渡すとその設定の修正
+  // 2026.11.13 変更：日付欄はどこをクリック（タップ）してもカレンダーが開く
+  $('fDate').addEventListener('click', function () {
+    try {
+      if (this.showPicker) this.showPicker();
+    } catch (err) { /* 開けない環境では標準の動作のまま */ }
+  });
+
   function openForm(page) {
     $('newForm').reset();
     formEditId = page ? page.id : null;
