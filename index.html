@@ -142,6 +142,24 @@ button { cursor: pointer; }
 }
 #bar .btn { height: 46px; padding: 0 12px; }
 
+/* 2026.11.13 変更：数字キーパッド（文字入力中でも一瞬で数字を打てる） */
+#keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }
+#keypad[hidden] { display: none; }
+#keypad button {
+  height: 46px;
+  font-size: 22px;
+  font-weight: 600;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#keypad button:active { background: var(--panel); }
+#keypad .fn { background: var(--panel); font-size: 18px; }
+#keypad .wide { grid-column: span 3; background: var(--accent); border-color: var(--accent); color: #fff; font-size: 18px; }
+
 /* ===== 新規ページ入力・設定修正 ===== */
 #overlay {
   display: none;
@@ -166,7 +184,18 @@ button { cursor: pointer; }
   border: 1px solid var(--line);
   border-radius: 8px;
 }
-/* 2026.11.13 変更：場所を「選択も直接入力もできる窓」に変更 */
+/* 2026.11.13 変更：日付欄が右にはみ出る問題の修正（iPhoneのSafari対策） */
+#newForm input, #newForm select { min-width: 0; max-width: 100%; }
+#newForm input[type="date"] { text-align: left; }
+@media (pointer: coarse) {
+  #newForm input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    line-height: 44px;
+  }
+  #newForm input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+}
+/* 2026.11.13 変更：場所・練習内容を「選択も直接入力もできる窓」に変更 */
 #newForm .combo { display: flex; gap: 6px; }
 #newForm .combo input { flex: 1; min-width: 0; }
 #newForm .combo select { width: 110px; flex: none; }
@@ -228,6 +257,23 @@ button { cursor: pointer; }
 <!-- 固定フッター：タイム・メモ入力 -->
 <footer id="bar">
   <div id="preview"></div>
+  <!-- 2026.11.13 変更：数字キーパッド -->
+  <div id="keypad" hidden>
+    <button type="button" data-k="1">1</button>
+    <button type="button" data-k="2">2</button>
+    <button type="button" data-k="3">3</button>
+    <button type="button" data-k="bs" class="fn" aria-label="1文字消す">⌫</button>
+    <button type="button" data-k="4">4</button>
+    <button type="button" data-k="5">5</button>
+    <button type="button" data-k="6">6</button>
+    <button type="button" data-k="/" class="fn">／</button>
+    <button type="button" data-k="7">7</button>
+    <button type="button" data-k="8">8</button>
+    <button type="button" data-k="9">9</button>
+    <button type="button" data-k="kana" class="fn" aria-label="文字キーボードに切替">あ</button>
+    <button type="button" data-k="0">0</button>
+    <button type="button" data-k="ok" class="wide">追加・保存</button>
+  </div>
   <form id="entryForm" autocomplete="off">
     <button id="modeBtn" class="btn sub" type="button" aria-label="キーボード切替">123</button>
     <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
@@ -260,9 +306,12 @@ button { cursor: pointer; }
       <input id="fTemp" type="number" inputmode="decimal" step="0.1" placeholder="例 18">
     </label>
 
-    <label>何を練習？
-      <input id="fPractice" type="text" required placeholder="例 8の字、ジムカーナコース">
-    </label>
+    <!-- 2026.11.13 変更：練習内容も、直接入力または右の「選択」から選べる -->
+    <div class="lab">何を練習？（直接入力、または右から選択）</div>
+    <div class="combo">
+      <input id="fPractice" type="text" required placeholder="練習内容を入力">
+      <select id="fPracticePick" aria-label="練習内容を選ぶ"></select>
+    </div>
 
     <div id="newBtns">
       <button id="newCancel" class="btn sub" type="button">キャンセル</button>
@@ -281,6 +330,8 @@ button { cursor: pointer; }
   var KEY = 'motoGymkhanaLog.v1';
   // 2026.11.13 変更：「その他」を廃止（直接入力できるため）
   var PLACES = ['キョウセイ２輪', 'キョウセイ４輪', 'PPS', 'レインボー'];
+  // 2026.11.13 変更：練習内容の選択肢（「その他」を選ぶと入力窓が空になり、手入力できる）
+  var PRACTICES = ['8の字GP', '回転弁当', '牛丼弁当', 'アタックコース', 'その他'];
   var WEATHERS = ['晴れ', '曇り', '雨'];
   var WD = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -459,15 +510,59 @@ button { cursor: pointer; }
       apply();
     });
     inp.addEventListener('compositionend', apply);
-    return {
+    var api = {
       show: show,
       reset: function () { prev = ''; inp.value = ''; pv.textContent = ''; },
-      insertSlash: function () {
-        var v = inp.value + '/';
+      // 2026.11.13 変更：キーパッド用（末尾に1文字追加／1文字消す）
+      append: function (ch) {
+        var v = inp.value + ch;
         if (liveOk(v)) { inp.value = v; prev = v; show(); }
+      },
+      backspace: function () {
+        var v = inp.value.slice(0, -1);
+        inp.value = v;
+        prev = v;
+        show();
+      },
+      insertSlash: function () {
+        api.append('/');
         inp.focus();
       }
     };
+    inp._rules = api;
+    return api;
+  }
+
+  // 2026.11.13 変更：数字キーパッドと入力方式の切替
+  // numMode=true：画面の数字キーパッドで入力（システムのキーボードは出さない）
+  // numMode=false：システムの文字キーボード
+  var numMode = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  var activeInput = entry;
+  document.addEventListener('focusin', function (e) {
+    if (e.target && e.target._rules) activeInput = e.target;
+  });
+  function modeAttr() { return numMode ? 'none' : 'text'; }
+  function applyMode() {
+    $('keypad').hidden = !numMode;
+    $('modeBtn').textContent = numMode ? 'あ' : '123';
+    document.querySelectorAll('input').forEach(function (i) {
+      if (i._rules) i.setAttribute('inputmode', modeAttr());
+    });
+  }
+  function toggleMode() {
+    numMode = !numMode;
+    applyMode();
+    var inp = document.body.contains(activeInput) ? activeInput : entry;
+    inp.blur();
+    inp.focus();
+  }
+  function submitForm(form) {
+    if (!form) return;
+    if (form.requestSubmit) {
+      form.requestSubmit();
+    } else {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
   }
 
   // ---------- 描画 ----------
@@ -522,7 +617,7 @@ button { cursor: pointer; }
     inp.type = 'text';
     inp.value = initial;
     inp.placeholder = placeholder;
-    inp.setAttribute('inputmode', entry.getAttribute('inputmode'));
+    inp.setAttribute('inputmode', modeAttr());
     var pv = el('div', 'epreview');
     var rules = attachRules(inp, pv);
     rules.show();
@@ -704,6 +799,23 @@ button { cursor: pointer; }
     $('fPlace').focus();
   });
 
+  // 2026.11.13 変更：練習内容の選択（「その他」は窓を空にして手入力）
+  var pickHead2 = el('option', '', '▼ 選択');
+  pickHead2.value = '';
+  $('fPracticePick').appendChild(pickHead2);
+  fillOptions($('fPracticePick'), PRACTICES);
+
+  $('fPracticePick').addEventListener('change', function () {
+    var v = $('fPracticePick').value;
+    if (v === 'その他') {
+      $('fPractice').value = '';
+    } else if (v) {
+      $('fPractice').value = v;
+    }
+    $('fPracticePick').selectedIndex = 0;
+    $('fPractice').focus();
+  });
+
   // page が null なら新規作成、ページを渡すとその設定の修正
   function openForm(page) {
     $('newForm').reset();
@@ -782,13 +894,23 @@ button { cursor: pointer; }
 
   $('slashBtn').addEventListener('click', rules.insertSlash);
 
-  $('modeBtn').addEventListener('click', function () {
-    var numeric = entry.getAttribute('inputmode') === 'numeric';
-    entry.setAttribute('inputmode', numeric ? 'text' : 'numeric');
-    $('modeBtn').textContent = numeric ? 'あ' : '123';
-    entry.blur();
-    entry.focus();
+  // 2026.11.13 変更：入力方式の切替ボタンとキーパッドの動作
+  $('modeBtn').addEventListener('click', toggleMode);
+
+  // キーパッドを押しても入力欄からフォーカスが外れないようにする
+  $('keypad').addEventListener('mousedown', function (e) { e.preventDefault(); });
+  $('keypad').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (!b) return;
+    var inp = document.body.contains(activeInput) ? activeInput : entry;
+    var k = b.getAttribute('data-k');
+    if (k === 'kana') { toggleMode(); return; }
+    if (!inp._rules) return;
+    if (k === 'bs') inp._rules.backspace();
+    else if (k === 'ok') submitForm(inp.form);
+    else inp._rules.append(k);
   });
+  applyMode();
 
   $('entryForm').addEventListener('submit', function (e) {
     e.preventDefault();
