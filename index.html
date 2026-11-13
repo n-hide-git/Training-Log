@@ -134,6 +134,8 @@ button { cursor: pointer; }
   background: var(--panel);
   border-top: 1px solid var(--line);
 }
+/* 2026.11.13 変更：日本語入力時はスラッシュボタンを非表示 */
+#slashBtn { display: none; }
 #preview { min-height: 20px; padding: 0 4px 4px; font-size: 14px; color: var(--gold-text); }
 #entryForm { display: flex; gap: 6px; }
 /* 2026.11.13 変更：入力欄を複数行（書いている間だけ上下に広がる）に変更 */
@@ -538,12 +540,17 @@ body.numpad .ebtns .btn.primary { display: none; }
       pv.textContent = t ? '→ ' + t.text : '';
       grow();
     }
+    // 2026.11.13 変更：日本語IME入力中のカーソル・変換状態を保護
     function apply() {
       var v = norm(inp.value);
+
       if (!liveOk(v)) {
         inp.value = prev;
       } else {
-        inp.value = v;
+        // 値が変わった場合だけ再代入する
+        if (inp.value !== v) {
+          inp.value = v;
+        }
         prev = v;
       }
       show();
