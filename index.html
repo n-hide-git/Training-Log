@@ -53,12 +53,50 @@ button { cursor: pointer; }
 }
 /* 2026.11.13 追加：日付変更ボタン */
 #dateBtn { flex: none; padding: 0 10px; }
-#datePicker {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+#datePicker { display: none; }
+
+/* 2026.11.13 Ver.2.2：スマホでも確実に操作できる日付カレンダー */
+#calendarOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(20, 28, 40, .55);
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+}
+#calendarOverlay.open { display: flex; }
+#calendarPanel {
+  width: min(100%, 390px);
+  background: #fff;
+  color: var(--text);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+#calendarHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+#calendarMonth { flex: 1; text-align: center; font-size: 18px; font-weight: 700; }
+.cal-nav { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 22px; }
+#calendarGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-week { text-align: center; color: var(--sub); font-size: 12px; padding: 4px 0; }
+.cal-day {
+  min-width: 0; height: 42px; border: 1px solid transparent; border-radius: 10px;
+  background: #f3f5f8; color: var(--text); font-size: 15px; position: relative;
+}
+.cal-day.empty { visibility: hidden; }
+.cal-day.has-notes { background: #1f7ae0; color: #fff; font-weight: 700; }
+.cal-day.selected { outline: 3px solid #f2b705; outline-offset: 1px; }
+.cal-day.today:not(.has-notes) { border-color: #1f7ae0; color: #1f7ae0; font-weight: 700; }
+.cal-day .cal-count { position: absolute; right: 3px; top: 1px; font-size: 9px; line-height: 1; opacity: .9; }
+#calendarLegend { display: flex; align-items: center; gap: 7px; margin: 12px 0; color: var(--sub); font-size: 12px; }
+#calendarLegend .sample { width: 13px; height: 13px; border-radius: 4px; background: #1f7ae0; }
+#calendarActions { display: flex; gap: 8px; margin-top: 12px; }
+#calendarActions .btn { flex: 1; }
+@media (max-width: 380px) {
+  #calendarPanel { padding: 12px; }
+  #calendarGrid { gap: 3px; }
+  .cal-day { height: 39px; }
 }
 .btn {
   height: 44px;
@@ -279,7 +317,7 @@ body.numpad .ebtns .btn.primary { display: none; }
   <div id="empty">まだ記録がありません。<br>「＋新規」から練習ページを作成してください。</div>
   <section id="info" hidden>
     <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.1  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.2  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -357,6 +395,22 @@ body.numpad .ebtns .btn.primary { display: none; }
   </form>
 </div>
 
+<!-- 2026.11.13 Ver.2.2：スマホ対応の日付カレンダー -->
+<div id="calendarOverlay" aria-hidden="true">
+  <section id="calendarPanel" role="dialog" aria-modal="true" aria-label="日付を選択">
+    <div id="calendarHead">
+      <button id="calPrev" class="cal-nav" type="button" aria-label="前の月">‹</button>
+      <div id="calendarMonth"></div>
+      <button id="calNext" class="cal-nav" type="button" aria-label="次の月">›</button>
+    </div>
+    <div id="calendarGrid"></div>
+    <div id="calendarLegend"><span class="sample"></span> ノートがある日付</div>
+    <div id="calendarActions">
+      <button id="calToday" class="btn sub" type="button">今日</button>
+      <button id="calClose" class="btn sub" type="button">閉じる</button>
+    </div>
+  </section>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -882,24 +936,86 @@ body.numpad .ebtns .btn.primary { display: none; }
     renderAll(true);
   });
 
-  // 2026.11.13 追加：日付を選び、その日のノートだけを一覧にする。
-  $('dateBtn').addEventListener('click', function () {
-    var picker = $('datePicker');
-    picker.value = selectedDate || todayStr();
-    try {
-      if (picker.showPicker) picker.showPicker();
-      else picker.click();
-    } catch (err) {
-      picker.click();
-    }
-  });
-  $('datePicker').addEventListener('change', function () {
-    if (!this.value) return;
-    selectedDate = this.value;
+  // 2026.11.13 Ver.2.2：独自カレンダー。スマホ標準 date picker に依存しない。
+  var calendarMonth = (function () {
+    var p = (selectedDate || todayStr()).split('-');
+    return new Date(Number(p[0]), Number(p[1]) - 1, 1);
+  })();
+
+  function closeCalendar() {
+    $('calendarOverlay').classList.remove('open');
+    $('calendarOverlay').setAttribute('aria-hidden', 'true');
+  }
+
+  function chooseCalendarDate(date) {
+    selectedDate = date;
     state.selectedDate = selectedDate;
     state.current = null;
     save();
+    closeCalendar();
     renderAll(false);
+  }
+
+  function renderCalendar() {
+    var year = calendarMonth.getFullYear();
+    var month = calendarMonth.getMonth();
+    $('calendarMonth').textContent = year + '年' + (month + 1) + '月';
+    var grid = $('calendarGrid');
+    grid.textContent = '';
+    WD.forEach(function (w) {
+      grid.appendChild(el('div', 'cal-week', w));
+    });
+
+    var first = new Date(year, month, 1).getDay();
+    var days = new Date(year, month + 1, 0).getDate();
+    var counts = {};
+    state.pages.forEach(function (p) {
+      if (p && p.date) counts[p.date] = (counts[p.date] || 0) + 1;
+    });
+
+    for (var i = 0; i < first; i++) {
+      grid.appendChild(el('div', 'cal-day empty', ''));
+    }
+    for (var d = 1; d <= days; d++) {
+      var date = year + '-' + pad2(month + 1) + '-' + pad2(d);
+      var count = counts[date] || 0;
+      var cls = 'cal-day';
+      if (count) cls += ' has-notes';
+      if (date === selectedDate) cls += ' selected';
+      if (date === todayStr()) cls += ' today';
+      var b = el('button', cls, String(d));
+      b.type = 'button';
+      b.setAttribute('aria-label', date + (count ? ' ノート' + count + '冊' : ' ノートなし'));
+      if (count) b.appendChild(el('span', 'cal-count', String(count)));
+      b.addEventListener('click', (function (chosen) {
+        return function () { chooseCalendarDate(chosen); };
+      })(date));
+      grid.appendChild(b);
+    }
+  }
+
+  $('dateBtn').addEventListener('click', function () {
+    var p = (selectedDate || todayStr()).split('-');
+    calendarMonth = new Date(Number(p[0]), Number(p[1]) - 1, 1);
+    renderCalendar();
+    $('calendarOverlay').classList.add('open');
+    $('calendarOverlay').setAttribute('aria-hidden', 'false');
+  });
+  $('calPrev').addEventListener('click', function () {
+    calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+    renderCalendar();
+  });
+  $('calNext').addEventListener('click', function () {
+    calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+    renderCalendar();
+  });
+  $('calToday').addEventListener('click', function () { chooseCalendarDate(todayStr()); });
+  $('calClose').addEventListener('click', closeCalendar);
+  $('calendarOverlay').addEventListener('click', function (e) {
+    if (e.target === this) closeCalendar();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('calendarOverlay').classList.contains('open')) closeCalendar();
   });
 
   $('infoDel').addEventListener('click', function () {
