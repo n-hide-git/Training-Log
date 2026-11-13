@@ -299,7 +299,7 @@ body.numpad .ebtns .btn.primary { display: none; }
   <form id="entryForm" autocomplete="off">
     <button id="modeBtn" class="btn sub" type="button" aria-label="キーボード切替">123</button>
     <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
-    <textarea id="entry" rows="1" inputmode="numeric" enterkeyhint="done" placeholder="1/02/333 またはメモ"></textarea>
+    <textarea id="entry" rows="1" inputmode="text" enterkeyhint="done" placeholder="1/02/333 またはメモ"></textarea>
     <button class="btn" type="submit">追加</button>
   </form>
 </footer>
@@ -579,7 +579,8 @@ body.numpad .ebtns .btn.primary { display: none; }
   // 2026.11.13 変更：数字キーパッドと入力方式の切替
   // numMode=true：画面の数字キーパッドで入力（システムのキーボードは出さない）
   // numMode=false：システムの文字キーボード
-  var numMode = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  // 初期状態は文字入力（日本語キーボード）
+  var numMode = false;
   var activeInput = entry;
   document.addEventListener('focusin', function (e) {
     if (e.target && e.target._rules) {
