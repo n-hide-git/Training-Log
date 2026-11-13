@@ -75,6 +75,9 @@ button { cursor: pointer; }
 #main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 #info { padding: 14px 12px; border-bottom: 1px solid var(--line); }
 #infoDate { color: var(--sub); font-size: 14px; }
+/* 2026.11.13 変更：バージョン表示（日付の右横） */
+#infoHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+#ver { color: #9aa6b5; font-size: 12px; white-space: nowrap; }
 #infoPractice { font-size: 20px; font-weight: 700; margin: 4px 0 8px; word-break: break-word; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 14px; }
@@ -260,7 +263,8 @@ body.numpad .ebtns .btn.primary { display: none; }
 <main id="main">
   <div id="empty">まだ記録がありません。<br>「＋新規」から練習ページを作成してください。</div>
   <section id="info" hidden>
-    <div id="infoDate"></div>
+    <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.1.0 　nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
