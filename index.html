@@ -1,4 +1,4 @@
-<!-- 2026.11.13 Ver.2.2 カラーデザイン調整 -->
+<!-- 2026.11.13 Ver.2.5 選択欄をライトグリーンに調整 -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -7,10 +7,10 @@
 <title>ジムカーナ練習記録</title>
 <style>
 /* 2026.11.13 */
-/* 2026.11.13 Ver.2.2：落ち着いたブルーグレーを基調に配色を調整 */
+/* 2026.11.13 Ver.2.5：選択欄全般を淡いグリーンに統一。メイン表示色は維持 */
 :root {
   color-scheme: light;
-  --bg: #f5f7fa;
+  --bg: #DDE5ED;
   --panel: #eaf0f5;
   --line: #d7e0e8;
   --text: #243447;
@@ -41,18 +41,19 @@ button { cursor: pointer; }
 #top {
   flex: none;
   padding: calc(8px + env(safe-area-inset-top)) 10px 8px;
-  background: linear-gradient(180deg, #edf3f7 0%, #e8eff4 100%);
-  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #EAF7ED 0%, #E2F1E6 100%);
+  border-bottom: 1px solid #D2E6D7;
   box-shadow: 0 2px 8px rgba(35, 55, 75, .05);
 }
 #topRow { display: flex; gap: 6px; align-items: center; }
+#top .btn.sub { background: #F2FAF3; border-color: #D2E6D7; }
 #pageSel {
   flex: 1;
   min-width: 0;
   height: 44px;
   padding: 0 8px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: #F2FAF3;
+  border: 1px solid #D2E6D7;
   border-radius: 8px;
 }
 /* 2026.11.13 追加：日付変更ボタン */
@@ -73,21 +74,21 @@ button { cursor: pointer; }
 #calendarOverlay.open { display: flex; }
 #calendarPanel {
   width: min(100%, 390px);
-  background: #fbfdff;
+  background: #EAF7ED;
   color: var(--text);
-  border: 1px solid rgba(215, 224, 232, .9);
+  border: 1px solid #CFE4D4;
   border-radius: 18px;
   padding: 16px;
   box-shadow: 0 18px 55px rgba(30, 50, 70, .24);
 }
 #calendarHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
 #calendarMonth { flex: 1; text-align: center; font-size: 18px; font-weight: 700; }
-.cal-nav { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 22px; }
+.cal-nav { width: 42px; height: 42px; border: 1px solid #D2E6D7; border-radius: 10px; background: #F5FBF6; font-size: 22px; }
 #calendarGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
 .cal-week { text-align: center; color: var(--sub); font-size: 12px; padding: 4px 0; }
 .cal-day {
   min-width: 0; height: 42px; border: 1px solid transparent; border-radius: 10px;
-  background: #eef3f7; color: var(--text); font-size: 15px; position: relative;
+  background: #F1F8F2; color: var(--text); font-size: 15px; position: relative;
   transition: background .15s, transform .15s;
 }
 .cal-day:active { transform: scale(.96); }
@@ -100,6 +101,7 @@ button { cursor: pointer; }
 #calendarLegend .sample { width: 13px; height: 13px; border-radius: 4px; background: #2878a8; }
 #calendarActions { display: flex; gap: 8px; margin-top: 12px; }
 #calendarActions .btn { flex: 1; }
+#calendarPanel .btn.sub { background: #F5FBF6; border-color: #D2E6D7; }
 @media (max-width: 380px) {
   #calendarPanel { padding: 12px; }
   #calendarGrid { gap: 3px; }
@@ -133,7 +135,7 @@ button { cursor: pointer; }
 #menu .btn { flex: 1; }
 
 /* ===== 本文（スクロール） ===== */
-#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #f7f9fb; }
+#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: #DDE5ED; }
 #info {
   padding: 15px 13px;
   background: #ffffff;
@@ -184,7 +186,7 @@ button { cursor: pointer; }
   min-width: 0;
   height: 46px;
   padding: 9px 10px;
-  background: var(--bg);
+  background: #F2F9F3;
   border: 2px solid var(--accent);
   border-radius: 8px;
   font-size: 18px;
@@ -215,8 +217,8 @@ button { cursor: pointer; }
   min-width: 0;
   height: 46px;
   padding: 10px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: #F2F9F3;
+  border: 1px solid #D2E6D7;
   border-radius: 8px;
   font-size: 18px;
   line-height: 24px;
@@ -232,8 +234,8 @@ button { cursor: pointer; }
   height: 46px;
   font-size: 22px;
   font-weight: 600;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: #F2F9F3;
+  border: 1px solid #D2E6D7;
   border-radius: 8px;
   touch-action: manipulation;
   -webkit-user-select: none;
@@ -259,7 +261,7 @@ body.numpad .ebtns .btn.primary { display: none; }
   padding: calc(16px + env(safe-area-inset-top)) 12px 24px;
 }
 #overlay.open { display: block; }
-#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #EAF7ED; border: 1px solid #D2E6D7; border-radius: 12px; }
 #newForm h2 { margin: 0 0 12px; font-size: 18px; }
 #newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: var(--sub); }
 #newForm input, #newForm select {
@@ -268,8 +270,8 @@ body.numpad .ebtns .btn.primary { display: none; }
   height: 44px;
   margin-top: 4px;
   padding: 0 10px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: #F5FBF6;
+  border: 1px solid #D2E6D7;
   border-radius: 8px;
 }
 /* 2026.11.13 変更：日付欄が右にはみ出る問題の修正（iPhoneのSafari対策） */
@@ -283,9 +285,9 @@ body.numpad .ebtns .btn.primary { display: none; }
   }
   #newForm input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 }
-/* 2026.11.13 変更：必須の窓は枠を太く、必須でない窓（気温・天気）は中をグレーに */
+/* 2026.11.13 Ver.2.5：入力・選択欄の淡いグリーンを統一 */
 #newForm input:required { border: 3px solid var(--accent); }
-#newForm #fTemp, #newForm #fWeather { background: #e6eaf0; }
+#newForm #fTemp, #newForm #fWeather { background: #F5FBF6; }
 #newForm input::placeholder { color: #9aa6b5; }
 #newForm .req { margin-left: 6px; font-size: 12px; color: #9aa6b5; }
 /* 2026.11.13 変更：場所・練習内容を「選択も直接入力もできる窓」に変更 */
@@ -338,7 +340,7 @@ body.numpad .ebtns .btn.primary { display: none; }
   <div id="empty">まだ記録がありません。<br>「＋新規」から練習ページを作成してください。</div>
   <section id="info" hidden>
     <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.2  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.5  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
