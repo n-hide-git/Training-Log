@@ -329,7 +329,8 @@ button { cursor: pointer; }
 
   var KEY = 'motoGymkhanaLog.v1';
   // 2026.11.13 変更：「その他」を廃止（直接入力できるため）
-  var PLACES = ['キョウセイ２輪', 'キョウセイ４輪', 'PPS', 'レインボー'];
+  // 2026.11.13 変更：場所にも「その他」を追加（選ぶと入力窓が空になり、手入力できる）
+  var PLACES = ['キョウセイ２輪', 'キョウセイ４輪', 'PPS', 'レインボー', 'その他'];
   // 2026.11.13 変更：練習内容の選択肢（「その他」を選ぶと入力窓が空になり、手入力できる）
   var PRACTICES = ['8の字GP', '回転弁当', '牛丼弁当', 'アタックコース', 'その他'];
   var WEATHERS = ['晴れ', '曇り', '雨'];
@@ -794,7 +795,11 @@ button { cursor: pointer; }
 
   $('fPlacePick').addEventListener('change', function () {
     var v = $('fPlacePick').value;
-    if (v) $('fPlace').value = v;
+    if (v === 'その他') {
+      $('fPlace').value = '';
+    } else if (v) {
+      $('fPlace').value = v;
+    }
     $('fPlacePick').selectedIndex = 0;
     $('fPlace').focus();
   });
