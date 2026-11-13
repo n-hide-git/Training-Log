@@ -105,17 +105,20 @@ button { cursor: pointer; }
 
 /* 2026.11.13 変更：行の修正・挿入エディタ */
 .editor { padding: 10px 12px; border-bottom: 1px solid var(--line); background: rgba(31, 122, 224, 0.08); }
-.editor .erow { display: flex; gap: 6px; }
+.editor .erow { display: flex; gap: 6px; align-items: flex-end; }
 .editor .erow .btn { height: 46px; padding: 0 12px; }
-.editor input {
+.editor textarea {
   flex: 1;
   min-width: 0;
   height: 46px;
-  padding: 0 10px;
+  padding: 9px 10px;
   background: var(--bg);
   border: 2px solid var(--accent);
   border-radius: 8px;
   font-size: 18px;
+  line-height: 24px;
+  resize: none;
+  overflow-y: auto;
 }
 .epreview { min-height: 18px; padding: 2px 4px 0; font-size: 14px; color: var(--gold-text); }
 .ebtns { display: flex; gap: 6px; margin-top: 6px; }
@@ -130,15 +133,20 @@ button { cursor: pointer; }
 }
 #preview { min-height: 20px; padding: 0 4px 4px; font-size: 14px; color: var(--gold-text); }
 #entryForm { display: flex; gap: 6px; }
+/* 2026.11.13 変更：入力欄を複数行（書いている間だけ上下に広がる）に変更 */
+#entryForm { align-items: flex-end; }
 #entry {
   flex: 1;
   min-width: 0;
   height: 46px;
-  padding: 0 10px;
+  padding: 10px;
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 8px;
   font-size: 18px;
+  line-height: 24px;
+  resize: none;
+  overflow-y: auto;
 }
 #bar .btn { height: 46px; padding: 0 12px; }
 
@@ -158,6 +166,11 @@ button { cursor: pointer; }
 }
 #keypad button:active { background: var(--panel); }
 #keypad .fn { background: var(--panel); font-size: 18px; }
+/* 2026.11.13 変更：キーパッド表示中は、同じ働きの「追加」「／」「保存」ボタンを隠して1つにする */
+body.numpad #entryForm button[type="submit"],
+body.numpad #slashBtn,
+body.numpad .editor .erow .btn,
+body.numpad .ebtns .btn.primary { display: none; }
 #keypad .wide { grid-column: span 3; background: var(--accent); border-color: var(--accent); color: #fff; font-size: 18px; }
 
 /* ===== 新規ページ入力・設定修正 ===== */
@@ -277,12 +290,12 @@ button { cursor: pointer; }
     <button type="button" data-k="9">9</button>
     <button type="button" data-k="kana" class="fn" aria-label="文字キーボードに切替">あ</button>
     <button type="button" data-k="0">0</button>
-    <button type="button" data-k="ok" class="wide">追加・保存</button>
+    <button type="button" data-k="ok" class="wide" id="kOk">追加</button>
   </div>
   <form id="entryForm" autocomplete="off">
     <button id="modeBtn" class="btn sub" type="button" aria-label="キーボード切替">123</button>
     <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
-    <input id="entry" type="text" inputmode="numeric" enterkeyhint="done" placeholder="1/02/333 またはメモ">
+    <textarea id="entry" rows="1" inputmode="numeric" enterkeyhint="done" placeholder="1/02/333 またはメモ"></textarea>
     <button class="btn" type="submit">追加</button>
   </form>
 </footer>
@@ -497,9 +510,29 @@ button { cursor: pointer; }
   // 2026.11.13 変更：入力欄にタイムのルールを付ける（下の入力欄と修正欄で共用）
   function attachRules(inp, pv) {
     var prev = inp.value;
+    // 2026.11.13 変更：書いている間だけ入力欄を上下に広げる（画面の約35%まで）
+    function grow() {
+      if (document.activeElement !== inp) return;
+      var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      inp.style.height = 'auto';
+      var h = Math.min(inp.scrollHeight + 4, Math.round(vh * 0.35));
+      inp.style.height = Math.max(h, 46) + 'px';
+    }
+    inp.addEventListener('focus', grow);
+    inp.addEventListener('blur', function () {
+      inp.style.height = '';
+      inp.scrollTop = 0;
+    });
+    // Enterで追加・保存（日本語の変換確定中と Shift+Enter は除く）
+    inp.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) return;
+      e.preventDefault();
+      submitForm(inp.form);
+    });
     function show() {
       var t = parseTime(norm(inp.value));
       pv.textContent = t ? '→ ' + t.text : '';
+      grow();
     }
     function apply() {
       var v = norm(inp.value);
@@ -518,7 +551,7 @@ button { cursor: pointer; }
     inp.addEventListener('compositionend', apply);
     var api = {
       show: show,
-      reset: function () { prev = ''; inp.value = ''; pv.textContent = ''; },
+      reset: function () { prev = ''; inp.value = ''; pv.textContent = ''; grow(); },
       // 2026.11.13 変更：キーパッド用（末尾に1文字追加／1文字消す）
       append: function (ch) {
         var v = inp.value + ch;
@@ -545,13 +578,22 @@ button { cursor: pointer; }
   var numMode = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var activeInput = entry;
   document.addEventListener('focusin', function (e) {
-    if (e.target && e.target._rules) activeInput = e.target;
+    if (e.target && e.target._rules) {
+      activeInput = e.target;
+      updateOk();
+    }
   });
+  // キーパッドの実行ボタンの表示を、入力中の欄に合わせる（追加／保存／挿入）
+  function updateOk() {
+    var inp = document.body.contains(activeInput) ? activeInput : entry;
+    $('kOk').textContent = inp._okLabel || '追加';
+  }
   function modeAttr() { return numMode ? 'none' : 'text'; }
   function applyMode() {
     $('keypad').hidden = !numMode;
+    document.body.classList.toggle('numpad', numMode);
     $('modeBtn').textContent = numMode ? 'あ' : '123';
-    document.querySelectorAll('input').forEach(function (i) {
+    document.querySelectorAll('input,textarea').forEach(function (i) {
       if (i._rules) i.setAttribute('inputmode', modeAttr());
     });
   }
@@ -598,7 +640,7 @@ button { cursor: pointer; }
     var p = currentPage();
     $('empty').hidden = !!p;
     $('info').hidden = !p;
-    $('entryForm').querySelectorAll('input,button').forEach(function (e) { e.disabled = !p; });
+    $('entryForm').querySelectorAll('textarea,button').forEach(function (e) { e.disabled = !p; });
     if (!p) return;
     $('infoDate').textContent = formatDate(p.date);
     $('infoPractice').textContent = p.practice;
@@ -619,8 +661,8 @@ button { cursor: pointer; }
     var row = el('div', 'erow');
     var slash = el('button', 'btn sub', '／');
     slash.type = 'button';
-    var inp = el('input');
-    inp.type = 'text';
+    var inp = el('textarea');
+    inp.rows = 1;
     inp.value = initial;
     inp.placeholder = placeholder;
     inp.setAttribute('inputmode', modeAttr());
@@ -632,8 +674,9 @@ button { cursor: pointer; }
     row.appendChild(inp);
     var btns = el('div', 'ebtns');
     buttons.forEach(function (b) {
-      var bt = el('button', 'btn ' + (b.cls || ''), b.label);
+      var bt = el('button', 'btn ' + (b.cls || '') + (b.submit ? ' primary' : ''), b.label);
       bt.type = b.submit ? 'submit' : 'button';
+      if (b.submit) inp._okLabel = b.label;
       if (!b.submit) {
         bt.addEventListener('click', function () { b.onClick(inp.value.trim()); });
       }
@@ -752,8 +795,9 @@ button { cursor: pointer; }
         listEl.appendChild(buildInsertRow(p, e));
       }
     });
-    var ei = listEl.querySelector('.editor input');
+    var ei = listEl.querySelector('.editor textarea');
     if (ei) ei.focus();
+    updateOk();
   }
 
   function renderAll(scrollToBottom) {
