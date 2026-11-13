@@ -1,4 +1,4 @@
-<!-- 2026.11.13 Ver.2.5 選択欄をライトグリーンに調整 -->
+<!-- 2026.11.13 Ver.2.6 新規ウィンドウを渋い緑に変更 -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -261,9 +261,9 @@ body.numpad .ebtns .btn.primary { display: none; }
   padding: calc(16px + env(safe-area-inset-top)) 12px 24px;
 }
 #overlay.open { display: block; }
-#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #EAF7ED; border: 1px solid #D2E6D7; border-radius: 12px; }
+#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #A9B89E; /* 2026.11.13 Ver.2.6 渋い緑 */ border: 1px solid #D2E6D7; border-radius: 12px; }
 #newForm h2 { margin: 0 0 12px; font-size: 18px; }
-#newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: var(--sub); }
+#newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: #2f3d2a; } /* 2026.11.13 Ver.2.6 緑背景で読みやすく */
 #newForm input, #newForm select {
   display: block;
   width: 100%;
@@ -340,7 +340,7 @@ body.numpad .ebtns .btn.primary { display: none; }
   <div id="empty">まだ記録がありません。<br>「＋新規」から練習ページを作成してください。</div>
   <section id="info" hidden>
     <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.5  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.6  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
