@@ -529,12 +529,15 @@ body.numpad .ebtns .btn.primary { display: none; }
       inp.style.height = '';
       inp.scrollTop = 0;
     });
-    // Enterで追加・保存（日本語の変換確定中と Shift+Enter は除く）
+    // 2026.11.13 変更：Enterで改行、登録ボタンで保存
     inp.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) return;
-      e.preventDefault();
-      submitForm(inp.form);
+      // 日本語IMEの変換中は標準動作に任せる
+      if (e.isComposing || e.keyCode === 229) return;
+
+      // Enterは改行として使用する
+      // 保存は登録・保存ボタンで行う
     });
+
     function show() {
       var t = parseTime(norm(inp.value));
       pv.textContent = t ? '→ ' + t.text : '';
