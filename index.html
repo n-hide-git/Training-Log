@@ -195,6 +195,11 @@ button { cursor: pointer; }
   }
   #newForm input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 }
+/* 2026.11.13 変更：必須の窓は枠を太く、必須でない窓（気温・天気）は中をグレーに */
+#newForm input:required { border: 3px solid var(--accent); }
+#newForm #fTemp, #newForm #fWeather { background: #e6eaf0; }
+#newForm input::placeholder { color: #9aa6b5; }
+#newForm .req { margin-left: 6px; font-size: 12px; color: #9aa6b5; }
 /* 2026.11.13 変更：場所・練習内容を「選択も直接入力もできる窓」に変更 */
 #newForm .combo { display: flex; gap: 6px; }
 #newForm .combo input { flex: 1; min-width: 0; }
@@ -287,19 +292,19 @@ button { cursor: pointer; }
   <form id="newForm" autocomplete="off">
     <h2 id="formTitle">新しい練習ページ</h2>
 
-    <label>日付
+    <label>日付<span class="req">必須</span>
       <input id="fDate" type="date" required>
     </label>
 
     <!-- 2026.11.13 変更：場所は直接入力、または右の「選択」から選べる -->
     <div class="lab">場所（直接入力、または右から選択）</div>
     <div class="combo">
-      <input id="fPlace" type="text" required placeholder="場所を入力">
+      <input id="fPlace" type="text" required placeholder="必須：場所を入力">
       <select id="fPlacePick" aria-label="場所を選ぶ"></select>
     </div>
 
     <label>天気
-      <select id="fWeather" required></select>
+      <select id="fWeather"></select>
     </label>
 
     <label>気温（℃）
@@ -309,7 +314,7 @@ button { cursor: pointer; }
     <!-- 2026.11.13 変更：練習内容も、直接入力または右の「選択」から選べる -->
     <div class="lab">何を練習？（直接入力、または右から選択）</div>
     <div class="combo">
-      <input id="fPractice" type="text" required placeholder="練習内容を入力">
+      <input id="fPractice" type="text" required placeholder="必須：練習内容を入力">
       <select id="fPracticePick" aria-label="練習内容を選ぶ"></select>
     </div>
 
