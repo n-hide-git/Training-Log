@@ -1,0 +1,862 @@
+<!-- 2026.11.13 -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ジムカーナ練習記録</title>
+<style>
+/* 2026.11.13 */
+/* 2026.11.13 変更：白ベースの配色 */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --panel: #f3f5f8;
+  --line: #d5dbe3;
+  --text: #1c2430;
+  --sub: #5d6b7c;
+  --accent: #1f7ae0;
+  --gold: #f2b705;
+  --gold-text: #9a6a00;
+  --danger: #d93636;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* ===== 固定ヘッダー（ページ選択） ===== */
+#top {
+  flex: none;
+  padding: calc(8px + env(safe-area-inset-top)) 10px 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+#topRow { display: flex; gap: 6px; }
+#pageSel {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.btn {
+  height: 44px;
+  padding: 0 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.btn.sub { background: var(--bg); border: 1px solid var(--line); color: var(--text); }
+.btn.danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+#menu {
+  display: none;
+  margin-top: 8px;
+  gap: 8px;
+}
+#menu.open { display: flex; }
+#menu .btn { flex: 1; }
+
+/* ===== 本文（スクロール） ===== */
+#main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#info { padding: 14px 12px; border-bottom: 1px solid var(--line); }
+#infoDate { color: var(--sub); font-size: 14px; }
+#infoPractice { font-size: 20px; font-weight: 700; margin: 4px 0 8px; word-break: break-word; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 14px; }
+/* 2026.11.13 変更：設定修正ボタンと操作ヒントを追加 */
+#infoBtns { display: flex; gap: 8px; margin-top: 12px; }
+#infoBtns .btn { height: 34px; font-size: 13px; padding: 0 12px; }
+#infoHint { margin-top: 10px; font-size: 12px; color: var(--sub); }
+#infoDate, #infoPractice, #infoChips { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+#empty { padding: 40px 16px; text-align: center; color: var(--sub); line-height: 1.8; }
+
+.entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+/* 2026.11.13 変更：ダブルクリック/ダブルタップ用に文字選択とズームを無効化 */
+.entry .body { flex: 1; min-width: 0; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.entry.time .body { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.entry.memo { background: rgba(0, 0, 0, 0.03); }
+.entry.memo .body { font-size: 15px; color: var(--sub); white-space: pre-wrap; word-break: break-word; padding-left: 12px; }
+.entry.best { background: rgba(242, 183, 5, 0.22); border-left: 4px solid var(--gold); }
+.entry.best .body { color: var(--gold-text); }
+.badge { margin-left: 8px; font-size: 12px; font-weight: 700; color: #1a1300; background: var(--gold); border-radius: 4px; padding: 1px 6px; vertical-align: middle; }
+.x { flex: none; width: 36px; height: 36px; background: transparent; border: none; color: var(--sub); font-size: 18px; }
+
+/* 2026.11.13 変更：行の修正・挿入エディタ */
+.editor { padding: 10px 12px; border-bottom: 1px solid var(--line); background: rgba(31, 122, 224, 0.08); }
+.editor .erow { display: flex; gap: 6px; }
+.editor .erow .btn { height: 46px; padding: 0 12px; }
+.editor input {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding: 0 10px;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  font-size: 18px;
+}
+.epreview { min-height: 18px; padding: 2px 4px 0; font-size: 14px; color: var(--gold-text); }
+.ebtns { display: flex; gap: 6px; margin-top: 6px; }
+.ebtns .btn { flex: 1; height: 40px; padding: 0 8px; }
+
+/* ===== 固定フッター（入力） ===== */
+#bar {
+  flex: none;
+  padding: 6px 10px calc(8px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+#preview { min-height: 20px; padding: 0 4px 4px; font-size: 14px; color: var(--gold-text); }
+#entryForm { display: flex; gap: 6px; }
+#entry {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding: 0 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 18px;
+}
+#bar .btn { height: 46px; padding: 0 12px; }
+
+/* ===== 新規ページ入力・設定修正 ===== */
+#overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(28, 36, 48, 0.55);
+  overflow-y: auto;
+  padding: calc(16px + env(safe-area-inset-top)) 12px 24px;
+}
+#overlay.open { display: block; }
+#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+#newForm h2 { margin: 0 0 12px; font-size: 18px; }
+#newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: var(--sub); }
+#newForm input, #newForm select {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-top: 4px;
+  padding: 0 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+/* 2026.11.13 変更：場所を「選択も直接入力もできる窓」に変更 */
+#newForm .combo { display: flex; gap: 6px; }
+#newForm .combo input { flex: 1; min-width: 0; }
+#newForm .combo select { width: 110px; flex: none; }
+#newBtns { display: flex; gap: 8px; margin-top: 18px; }
+#newBtns .btn { flex: 1; }
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(90px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 10px 16px;
+  background: #1c2430;
+  color: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- 固定ヘッダー：ページ選択 -->
+<header id="top">
+  <div id="topRow">
+    <select id="pageSel" aria-label="ページ選択"></select>
+    <button id="newBtn" class="btn" type="button">＋新規</button>
+    <button id="menuBtn" class="btn sub" type="button" aria-label="メニュー">⋯</button>
+  </div>
+  <div id="menu">
+    <button id="exportBtn" class="btn sub" type="button">バックアップ書き出し</button>
+    <button id="importBtn" class="btn sub" type="button">読み込み</button>
+    <input id="importFile" type="file" accept="application/json,.json" hidden>
+  </div>
+</header>
+
+<!-- 本文 -->
+<main id="main">
+  <div id="empty">まだ記録がありません。<br>「＋新規」から練習ページを作成してください。</div>
+  <section id="info" hidden>
+    <div id="infoDate"></div>
+    <div id="infoPractice"></div>
+    <div class="chips" id="infoChips"></div>
+    <div id="infoBtns">
+      <button id="infoEdit" class="btn sub" type="button">設定を修正</button>
+      <button id="infoDel" class="btn danger" type="button">このページを削除</button>
+    </div>
+    <div id="infoHint">記録の行をダブルタップ（PCはダブルクリック）で、修正・間への挿入ができます。上の日付や練習名をダブルタップで設定の修正です。</div>
+  </section>
+  <div id="list"></div>
+</main>
+
+<!-- 固定フッター：タイム・メモ入力 -->
+<footer id="bar">
+  <div id="preview"></div>
+  <form id="entryForm" autocomplete="off">
+    <button id="modeBtn" class="btn sub" type="button" aria-label="キーボード切替">123</button>
+    <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
+    <input id="entry" type="text" inputmode="numeric" enterkeyhint="done" placeholder="1/02/333 またはメモ">
+    <button class="btn" type="submit">追加</button>
+  </form>
+</footer>
+
+<!-- 新規ページ作成・設定修正（共用） -->
+<div id="overlay">
+  <form id="newForm" autocomplete="off">
+    <h2 id="formTitle">新しい練習ページ</h2>
+
+    <label>日付
+      <input id="fDate" type="date" required>
+    </label>
+
+    <!-- 2026.11.13 変更：場所は直接入力、または右の「選択」から選べる -->
+    <div class="lab">場所（直接入力、または右から選択）</div>
+    <div class="combo">
+      <input id="fPlace" type="text" required placeholder="場所を入力">
+      <select id="fPlacePick" aria-label="場所を選ぶ"></select>
+    </div>
+
+    <label>天気
+      <select id="fWeather" required></select>
+    </label>
+
+    <label>気温（℃）
+      <input id="fTemp" type="number" inputmode="decimal" step="0.1" placeholder="例 18">
+    </label>
+
+    <label>何を練習？
+      <input id="fPractice" type="text" required placeholder="例 8の字、ジムカーナコース">
+    </label>
+
+    <div id="newBtns">
+      <button id="newCancel" class="btn sub" type="button">キャンセル</button>
+      <button id="formOk" class="btn" type="submit">登録</button>
+    </div>
+  </form>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// 2026.11.13
+(function () {
+  'use strict';
+
+  var KEY = 'motoGymkhanaLog.v1';
+  // 2026.11.13 変更：「その他」を廃止（直接入力できるため）
+  var PLACES = ['キョウセイ２輪', 'キョウセイ４輪', 'PPS', 'レインボー'];
+  var WEATHERS = ['晴れ', '曇り', '雨'];
+  var WD = ['日', '月', '火', '水', '木', '金', '土'];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var pageSel = $('pageSel'), main = $('main'), listEl = $('list');
+  var entry = $('entry'), preview = $('preview');
+
+  // 2026.11.13 変更：修正中の行（{id, mode:'edit'|'insert'}）
+  var editing = null;
+  // 2026.11.13 変更：設定修正中のページID（null なら新規作成）
+  var formEditId = null;
+
+  // ---------- 保存・読込 ----------
+  function load() {
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.pages)) return s;
+    } catch (e) { /* 読めない場合は空で開始 */ }
+    return { pages: [], current: null };
+  }
+  var state = load();
+
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {
+      toast('保存に失敗しました（容量不足など）');
+    }
+  }
+
+  // ---------- 共通 ----------
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function wdOf(s) {
+    var p = s.split('-');
+    return WD[new Date(+p[0], +p[1] - 1, +p[2]).getDay()];
+  }
+  function formatDate(s) {
+    var p = s.split('-');
+    return p[0] + '年' + (+p[1]) + '月' + (+p[2]) + '日（' + wdOf(s) + '）';
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+
+  function sortedPages() {
+    return state.pages.slice().sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return a.created - b.created;
+    });
+  }
+  function currentPage() {
+    for (var i = 0; i < state.pages.length; i++) {
+      if (state.pages[i].id === state.current) return state.pages[i];
+    }
+    return null;
+  }
+  // 以前の保存データ（その他＋手入力）にも対応
+  function placeText(p) {
+    return (p.place === 'その他' && p.placeOther) ? p.placeOther : p.place;
+  }
+  function indexOfEntry(p, id) {
+    for (var i = 0; i < p.entries.length; i++) {
+      if (p.entries[i].id === id) return i;
+    }
+    return -1;
+  }
+
+  // 2026.11.13 変更：ダブルクリック（PC）／ダブルタップ（スマホ）
+  function onDouble(target, fn) {
+    var last = 0;
+    target.addEventListener('dblclick', function (ev) {
+      ev.preventDefault();
+      fn();
+    });
+    target.addEventListener('touchend', function (ev) {
+      var now = Date.now();
+      if (now - last < 350) {
+        ev.preventDefault();
+        last = 0;
+        fn();
+      } else {
+        last = now;
+      }
+    });
+  }
+
+  // ---------- タイム入力ルール ----------
+  // 全角数字・全角スラッシュのみで構成されている場合は半角に直す
+  function norm(v) {
+    if (/^[0-9０-９\/／]*$/.test(v)) {
+      return v.replace(/[０-９]/g, function (c) {
+        return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+      }).replace(/／/g, '/');
+    }
+    return v;
+  }
+  // 数字とスラッシュだけの入力中に、秒は59まで・秒以下は3桁までに制限
+  function liveOk(v) {
+    if (!/^[0-9\/]*$/.test(v) || v.indexOf('/') < 0) return true;
+    var p = v.split('/');
+    if (p.length > 3) return false;
+    if (p[0] === '' || p[0].length > 2) return false;
+    if (p.length >= 2) {
+      if (p[1].length > 2) return false;
+      if (p[1] !== '' && Number(p[1]) > 59) return false;
+    }
+    if (p.length === 3) {
+      if (p[1] === '') return false;
+      if (p[2].length > 3) return false;
+    }
+    return true;
+  }
+  // 1/02/333 → 1分02秒333（秒以下が3桁未満なら右を0で埋める：36 → 360）
+  function parseTime(v) {
+    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{1,3})$/.exec(v);
+    if (!m) return null;
+    var min = Number(m[1]);
+    var sec = Number(m[2]);
+    if (sec > 59) return null;
+    var ms3 = m[3];
+    while (ms3.length < 3) ms3 += '0';
+    return {
+      ms: min * 60000 + sec * 1000 + Number(ms3),
+      text: min + '分' + pad2(sec) + '秒' + ms3
+    };
+  }
+  // 2026.11.13 変更：入力文字から記録（タイム or メモ）を作る
+  function buildEntry(raw) {
+    var t = parseTime(norm(raw));
+    if (t) return { type: 'time', ms: t.ms, text: t.text };
+    return { type: 'memo', text: raw };
+  }
+  // 2026.11.13 変更：記録を修正用の入力文字（1/02/333）に戻す
+  function editText(e) {
+    if (e.type !== 'time') return e.text;
+    var min = Math.floor(e.ms / 60000);
+    var sec = Math.floor((e.ms % 60000) / 1000);
+    var ms = e.ms % 1000;
+    return min + '/' + pad2(sec) + '/' + ('00' + ms).slice(-3);
+  }
+  // 2026.11.13 変更：入力欄にタイムのルールを付ける（下の入力欄と修正欄で共用）
+  function attachRules(inp, pv) {
+    var prev = inp.value;
+    function show() {
+      var t = parseTime(norm(inp.value));
+      pv.textContent = t ? '→ ' + t.text : '';
+    }
+    function apply() {
+      var v = norm(inp.value);
+      if (!liveOk(v)) {
+        inp.value = prev;
+      } else {
+        inp.value = v;
+        prev = v;
+      }
+      show();
+    }
+    inp.addEventListener('input', function (e) {
+      if (e.isComposing) return;
+      apply();
+    });
+    inp.addEventListener('compositionend', apply);
+    return {
+      show: show,
+      reset: function () { prev = ''; inp.value = ''; pv.textContent = ''; },
+      insertSlash: function () {
+        var v = inp.value + '/';
+        if (liveOk(v)) { inp.value = v; prev = v; show(); }
+        inp.focus();
+      }
+    };
+  }
+
+  // ---------- 描画 ----------
+  function renderSelect() {
+    var pages = sortedPages();
+    pageSel.textContent = '';
+    if (!pages.length) {
+      var o = el('option', '', 'ページなし');
+      o.value = '';
+      pageSel.appendChild(o);
+      pageSel.disabled = true;
+      return;
+    }
+    pageSel.disabled = false;
+    pages.forEach(function (p) {
+      var n = pages.filter(function (x) { return x.date === p.date; }).indexOf(p) + 1;
+      var d = p.date.split('-');
+      var label = (+d[1]) + '/' + (+d[2]) + '(' + wdOf(p.date) + ') ' + n + 'ページ目 ' + p.practice;
+      var opt = el('option', '', label);
+      opt.value = p.id;
+      if (p.id === state.current) opt.selected = true;
+      pageSel.appendChild(opt);
+    });
+  }
+
+  function renderInfo() {
+    var p = currentPage();
+    $('empty').hidden = !!p;
+    $('info').hidden = !p;
+    $('entryForm').querySelectorAll('input,button').forEach(function (e) { e.disabled = !p; });
+    if (!p) return;
+    $('infoDate').textContent = formatDate(p.date);
+    $('infoPractice').textContent = p.practice;
+    var chips = $('infoChips');
+    chips.textContent = '';
+    chips.appendChild(el('span', 'chip', placeText(p)));
+    chips.appendChild(el('span', 'chip', p.weather));
+    if (p.temp !== '' && p.temp !== null && p.temp !== undefined) {
+      chips.appendChild(el('span', 'chip', p.temp + '℃'));
+    }
+  }
+
+  // 2026.11.13 変更：修正・挿入用のエディタ行
+  // buttons: [{label, cls, submit, onClick(入力値)}]
+  function buildEditor(initial, placeholder, buttons) {
+    var form = el('form', 'editor');
+    form.autocomplete = 'off';
+    var row = el('div', 'erow');
+    var slash = el('button', 'btn sub', '／');
+    slash.type = 'button';
+    var inp = el('input');
+    inp.type = 'text';
+    inp.value = initial;
+    inp.placeholder = placeholder;
+    inp.setAttribute('inputmode', entry.getAttribute('inputmode'));
+    var pv = el('div', 'epreview');
+    var rules = attachRules(inp, pv);
+    rules.show();
+    slash.addEventListener('click', rules.insertSlash);
+    row.appendChild(slash);
+    row.appendChild(inp);
+    var btns = el('div', 'ebtns');
+    buttons.forEach(function (b) {
+      var bt = el('button', 'btn ' + (b.cls || ''), b.label);
+      bt.type = b.submit ? 'submit' : 'button';
+      if (!b.submit) {
+        bt.addEventListener('click', function () { b.onClick(inp.value.trim()); });
+      }
+      btns.appendChild(bt);
+    });
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var ok = buttons.filter(function (b) { return b.submit; })[0];
+      if (ok) ok.onClick(inp.value.trim());
+    });
+    form.appendChild(row);
+    form.appendChild(pv);
+    form.appendChild(btns);
+    return form;
+  }
+
+  function saveEdit(p, e, raw) {
+    if (!raw) {
+      toast('空欄は保存できません（削除は ✕ で）');
+      return false;
+    }
+    var idx = indexOfEntry(p, e.id);
+    if (idx < 0) return false;
+    var ne = buildEntry(raw);
+    ne.id = e.id;
+    p.entries[idx] = ne;
+    save();
+    return true;
+  }
+
+  function buildEditRow(p, e) {
+    var orig = editText(e);
+    return buildEditor(orig, '1/02/333 またはメモ', [
+      {
+        label: '保存', submit: true,
+        onClick: function (raw) {
+          if (saveEdit(p, e, raw)) { editing = null; renderList(); }
+        }
+      },
+      {
+        label: 'この下に挿入', cls: 'sub',
+        onClick: function (raw) {
+          if (raw !== orig && !saveEdit(p, e, raw)) return;
+          editing = { id: e.id, mode: 'insert' };
+          renderList();
+        }
+      },
+      {
+        label: '取消', cls: 'sub',
+        onClick: function () { editing = null; renderList(); }
+      }
+    ]);
+  }
+
+  function buildInsertRow(p, e) {
+    return buildEditor('', '挿入：1/02/333 またはメモ', [
+      {
+        label: '挿入', submit: true,
+        onClick: function (raw) {
+          if (!raw) return;
+          var idx = indexOfEntry(p, e.id);
+          if (idx < 0) return;
+          var ne = buildEntry(raw);
+          ne.id = uid();
+          p.entries.splice(idx + 1, 0, ne);
+          save();
+          editing = { id: ne.id, mode: 'insert' };
+          renderList();
+        }
+      },
+      {
+        label: '完了', cls: 'sub',
+        onClick: function () { editing = null; renderList(); }
+      }
+    ]);
+  }
+
+  function buildRow(p, e, isBest) {
+    var row = el('div', 'entry ' + e.type + (isBest ? ' best' : ''));
+    var body = el('div', 'body', e.text);
+    if (isBest) body.appendChild(el('span', 'badge', 'BEST'));
+    onDouble(body, function () {
+      editing = { id: e.id, mode: 'edit' };
+      renderList();
+    });
+    var x = el('button', 'x', '✕');
+    x.type = 'button';
+    x.setAttribute('aria-label', '削除');
+    x.addEventListener('click', function () {
+      if (!confirm('この行を削除しますか？\n' + e.text)) return;
+      p.entries = p.entries.filter(function (z) { return z.id !== e.id; });
+      editing = null;
+      save();
+      renderList();
+    });
+    row.appendChild(body);
+    row.appendChild(x);
+    return row;
+  }
+
+  function renderList() {
+    listEl.textContent = '';
+    var p = currentPage();
+    if (!p) return;
+    var best = null;
+    p.entries.forEach(function (e) {
+      if (e.type === 'time' && (best === null || e.ms < best)) best = e.ms;
+    });
+    p.entries.forEach(function (e) {
+      if (editing && editing.mode === 'edit' && editing.id === e.id) {
+        listEl.appendChild(buildEditRow(p, e));
+      } else {
+        listEl.appendChild(buildRow(p, e, e.type === 'time' && e.ms === best));
+      }
+      if (editing && editing.mode === 'insert' && editing.id === e.id) {
+        listEl.appendChild(buildInsertRow(p, e));
+      }
+    });
+    var ei = listEl.querySelector('.editor input');
+    if (ei) ei.focus();
+  }
+
+  function renderAll(scrollToBottom) {
+    editing = null;
+    renderSelect();
+    renderInfo();
+    renderList();
+    main.scrollTop = scrollToBottom ? main.scrollHeight : 0;
+  }
+
+  // ---------- ページ操作 ----------
+  pageSel.addEventListener('change', function () {
+    state.current = pageSel.value;
+    save();
+    renderAll(true);
+  });
+
+  $('infoDel').addEventListener('click', function () {
+    var p = currentPage();
+    if (!p) return;
+    if (!confirm('このページを削除しますか？\n' + formatDate(p.date) + ' ' + p.practice + '\n（記録も全て消えます）')) return;
+    state.pages = state.pages.filter(function (x) { return x.id !== p.id; });
+    var rest = sortedPages();
+    state.current = rest.length ? rest[rest.length - 1].id : null;
+    save();
+    renderAll(true);
+    if (!rest.length) openForm(null);
+  });
+
+  // ---------- 新規ページ・設定修正（共用フォーム） ----------
+  function fillOptions(sel, items) {
+    items.forEach(function (t) {
+      var o = el('option', '', t);
+      o.value = t;
+      sel.appendChild(o);
+    });
+  }
+  // 2026.11.13 変更：場所の「選択」ボタン（選ぶと左の入力窓に入る。そのまま手直しもできる）
+  var pickHead = el('option', '', '▼ 選択');
+  pickHead.value = '';
+  $('fPlacePick').appendChild(pickHead);
+  fillOptions($('fPlacePick'), PLACES);
+  fillOptions($('fWeather'), WEATHERS);
+
+  $('fPlacePick').addEventListener('change', function () {
+    var v = $('fPlacePick').value;
+    if (v) $('fPlace').value = v;
+    $('fPlacePick').selectedIndex = 0;
+    $('fPlace').focus();
+  });
+
+  // page が null なら新規作成、ページを渡すとその設定の修正
+  function openForm(page) {
+    $('newForm').reset();
+    formEditId = page ? page.id : null;
+    $('formTitle').textContent = page ? '練習ページの設定を修正' : '新しい練習ページ';
+    $('formOk').textContent = page ? '保存' : '登録';
+    if (page) {
+      $('fDate').value = page.date;
+      $('fPlace').value = placeText(page);
+      $('fWeather').value = page.weather;
+      $('fTemp').value = (page.temp === null || page.temp === undefined) ? '' : page.temp;
+      $('fPractice').value = page.practice;
+    } else {
+      $('fDate').value = todayStr();
+    }
+    $('overlay').classList.add('open');
+  }
+  function closeForm() { $('overlay').classList.remove('open'); }
+
+  $('newBtn').addEventListener('click', function () { openForm(null); });
+  $('newCancel').addEventListener('click', closeForm);
+
+  $('infoEdit').addEventListener('click', function () { openForm(currentPage()); });
+  onDouble($('infoDate'), function () { openForm(currentPage()); });
+  onDouble($('infoPractice'), function () { openForm(currentPage()); });
+  onDouble($('infoChips'), function () { openForm(currentPage()); });
+
+  $('newForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var date = $('fDate').value;
+    var place = $('fPlace').value.trim();
+    var weather = $('fWeather').value;
+    var temp = $('fTemp').value.trim();
+    var practice = $('fPractice').value.trim();
+    if (!date || !place || !practice) return;
+
+    if (formEditId) {
+      var target = null;
+      state.pages.forEach(function (x) { if (x.id === formEditId) target = x; });
+      if (!target) { closeForm(); return; }
+      target.date = date;
+      target.place = place;
+      target.placeOther = '';
+      target.weather = weather;
+      target.temp = temp;
+      target.practice = practice;
+      save();
+      closeForm();
+      renderSelect();
+      renderInfo();
+      toast('設定を修正しました');
+      return;
+    }
+
+    var page = {
+      id: uid(),
+      created: Date.now(),
+      date: date,
+      place: place,
+      placeOther: '',
+      weather: weather,
+      temp: temp,
+      practice: practice,
+      entries: []
+    };
+    state.pages.push(page);
+    state.current = page.id;
+    save();
+    closeForm();
+    renderAll(false);
+    entry.focus();
+  });
+
+  // ---------- 下部のタイム・メモ入力 ----------
+  var rules = attachRules(entry, preview);
+
+  $('slashBtn').addEventListener('click', rules.insertSlash);
+
+  $('modeBtn').addEventListener('click', function () {
+    var numeric = entry.getAttribute('inputmode') === 'numeric';
+    entry.setAttribute('inputmode', numeric ? 'text' : 'numeric');
+    $('modeBtn').textContent = numeric ? 'あ' : '123';
+    entry.blur();
+    entry.focus();
+  });
+
+  $('entryForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var p = currentPage();
+    if (!p) return;
+    var raw = entry.value.trim();
+    if (!raw) return;
+    var ne = buildEntry(raw);
+    ne.id = uid();
+    p.entries.push(ne);
+    save();
+    rules.reset();
+    editing = null;
+    renderList();
+    main.scrollTop = main.scrollHeight;
+    entry.focus();
+  });
+
+  // ---------- バックアップ ----------
+  $('menuBtn').addEventListener('click', function () {
+    $('menu').classList.toggle('open');
+  });
+
+  $('exportBtn').addEventListener('click', function () {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'moto-gymkhana-log-' + todayStr().replace(/-/g, '') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  $('importBtn').addEventListener('click', function () { $('importFile').click(); });
+  $('importFile').addEventListener('change', function () {
+    var f = $('importFile').files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var s = JSON.parse(r.result);
+        if (!s || !Array.isArray(s.pages)) throw new Error('形式が違います');
+        if (!confirm('現在のデータを、読み込んだ内容で置き換えます。よろしいですか？')) return;
+        state = { pages: s.pages, current: s.current || null };
+        if (!currentPage()) {
+          var pages = sortedPages();
+          state.current = pages.length ? pages[pages.length - 1].id : null;
+        }
+        save();
+        renderAll(true);
+        toast('読み込みました');
+      } catch (err) {
+        toast('読み込めませんでした：' + err.message);
+      }
+      $('importFile').value = '';
+    };
+    r.readAsText(f);
+  });
+
+  // ---------- 起動 ----------
+  if (!currentPage() && state.pages.length) {
+    var ps = sortedPages();
+    state.current = ps[ps.length - 1].id;
+  }
+  renderAll(true);
+  if (!state.pages.length) openForm(null);
+})();
+</script>
+</body>
+</html>
