@@ -1,8 +1,9 @@
-<<<<<<< HEAD
+<!-- 2026.11.16 Ver.3.6 コメント（メモ）の文字を大きく・濃くして読みやすく -->
+<!-- 2026.11.16 Ver.3.5 分を省略した /50/222 を 0分50秒222 として入力できるように -->
+<!-- 2026.11.16 Ver.3.4 あり得ないタイム（例 1/80/555）に赤いメッセージを表示 -->
+<!-- 2026.11.16 Ver.3.3 1セットの枠をブラウン系の配色に変更 -->
+<!-- 2026.11.16 Ver.3.2 「何の練習？」とタイム入力を1セットの枠にまとめて強調 -->
 <!-- 2026.11.16 Ver.3.1 練習名を大きく表示／BESTを練習ごとに金色表示／独自数字キーを廃止し通常キーボードのみに変更 -->
-=======
-<!-- 2026.11.13 Ver.2.6.5 新規ウィンドウを渋い緑に変更 -->
->>>>>>> 71730ac315013017422075b38e14161844322f7c
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -152,12 +153,7 @@ button { cursor: pointer; }
 /* 2026.11.13 変更：バージョン表示（日付の右横） */
 #infoHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 #ver { color: #9aa6b5; font-size: 12px; white-space: nowrap; }
-<<<<<<< HEAD
 /* 2026.11.16 変更：大見出しは「場所」を表示（旧：練習内容） */
-=======
-/* 2026.11.13 Ver.2.6.5：ページが無い時もバージョンを表示 */
-#emptyVer { display: block; margin-top: 24px; text-align: right; color: #9aa6b5; font-size: 12px; }
->>>>>>> 71730ac315013017422075b38e14161844322f7c
 #infoPractice { font-size: 20px; font-weight: 750; letter-spacing: .01em; margin: 4px 0 8px; word-break: break-word; color: #20384c; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 14px; }
@@ -186,8 +182,9 @@ button { cursor: pointer; }
 /* 2026.11.16 Ver.3.1 変更：練習名を大きく（12px → 18px・太字） */
 .entry .ptag { display: inline-block; margin-left: 10px; padding: 3px 14px; font-size: 18px; font-weight: 700; color: var(--green-dark); background: #E3F1E6; border: 1px solid #BFDCC6; border-radius: 999px; vertical-align: middle; }
 .entry.best .ptag { color: var(--gold-text); background: rgba(233, 185, 73, 0.25); border-color: var(--gold); }
-.entry.memo { background: #f1f5f8; }
-.entry.memo .body { font-size: 15px; color: var(--sub); white-space: pre-wrap; word-break: break-word; padding-left: 12px; }
+/* 2026.11.16 Ver.3.6 変更：コメントを大きく・濃く（15px→19px、灰色→濃い紺、太さ500、行間を広く） */
+.entry.memo { background: #f7f9fb; border-left: 4px solid #aebfce; }
+.entry.memo .body { font-size: 19px; font-weight: 500; line-height: 1.55; letter-spacing: .02em; color: #1b2b3c; white-space: pre-wrap; word-break: break-word; padding-left: 8px; }
 .entry.best { background: rgba(242, 183, 5, 0.22); border-left: 4px solid var(--gold); }
 .entry.best .body { color: var(--gold-text); }
 .badge { margin-left: 8px; font-size: 12px; font-weight: 700; color: #1a1300; background: var(--gold); border-radius: 4px; padding: 1px 6px; vertical-align: middle; }
@@ -211,6 +208,8 @@ button { cursor: pointer; }
   overflow-y: auto;
 }
 .epreview { min-height: 18px; padding: 2px 4px 0; font-size: 14px; color: var(--gold-text); }
+/* 2026.11.16 Ver.3.4 追加：あり得ないタイムの警告表示（赤） */
+#preview.warn, .epreview.warn, #entrySet #preview.warn { color: var(--danger); font-weight: 700; }
 .ebtns { display: flex; gap: 6px; margin-top: 6px; }
 .ebtns .btn { flex: 1; height: 40px; padding: 0 8px; }
 /* 2026.11.16 追加：練習内容の選択（下の入力欄・修正欄で共用） */
@@ -257,6 +256,18 @@ button { cursor: pointer; }
 #bar .btn { height: 46px; padding: 0 12px; }
 
 /* 2026.11.16 Ver.3.1 変更：独自の数字キーパッドを廃止（通常キーボードのみ） */
+/* 2026.11.16 Ver.3.2 追加：練習内容＋タイム入力を1セットの枠で強調 */
+/* 2026.11.16 Ver.3.3 変更：1セットの枠をブラウン系の配色に変更 */
+#entrySet { padding: 8px 8px 8px; background: #F6ECE0; border: 2px solid #8B5E3C; border-radius: 12px; box-shadow: 0 2px 8px rgba(107, 66, 38, .20); }
+#entrySetHead { display: flex; align-items: center; gap: 6px; margin: 0 2px 6px; font-size: 14px; font-weight: 700; color: #6B4226; }
+#entrySetHead .step { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #8B5E3C; color: #fff; font-size: 13px; }
+#entrySetHead .arrow { color: #8B5E3C; font-size: 12px; }
+#entrySetHead .setnote { margin-left: auto; font-size: 11px; font-weight: 400; color: #8a7360; }
+#entrySet .pcontrol .psel, #entrySet .pcontrol .pother { border-color: #A97C50; background: #FFFBF6; font-weight: 600; color: #4A2F1B; }
+#entrySet #entry { background: #FFFBF6; border-color: #C9A67F; }
+#entrySet #entryForm .btn:not(.sub) { background: #8B5E3C; }
+#entrySet #entryForm .btn:not(.sub):hover { background: #6B4226; }
+#entrySet #preview { color: #6B4226; }
 
 /* ===== 新規ページ入力・設定修正 ===== */
 #overlay {
@@ -269,9 +280,9 @@ button { cursor: pointer; }
   padding: calc(16px + env(safe-area-inset-top)) 12px 24px;
 }
 #overlay.open { display: block; }
-#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #A9B89E; /* 2026.11.13 Ver.2.6 渋い緑 */ border: 1px solid #D2E6D7; border-radius: 12px; }
+#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #EAF7ED; border: 1px solid #D2E6D7; border-radius: 12px; }
 #newForm h2 { margin: 0 0 12px; font-size: 18px; }
-#newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: #2f3d2a; } /* 2026.11.13 Ver.2.6 緑背景で読みやすく */
+#newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: var(--sub); }
 #newForm input, #newForm select {
   display: block;
   width: 100%;
@@ -349,13 +360,8 @@ button { cursor: pointer; }
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
   <div id="empty">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</div>
   <section id="info" hidden>
-<<<<<<< HEAD
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.1  nakaZ</span></div>
-=======
-    <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.6.5  nakaZ</span></div>
->>>>>>> 71730ac315013017422075b38e14161844322f7c
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.6  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -369,15 +375,19 @@ button { cursor: pointer; }
 
 <!-- 固定フッター：タイム・メモ入力 -->
 <footer id="bar">
+  <!-- 2026.11.16 Ver.3.2 変更：練習内容とタイム入力を1つの枠（1セット）にまとめて強調 -->
+  <div id="entrySet">
+  <div id="entrySetHead"><span class="step">①</span>何の練習？<span class="arrow">▶</span><span class="step">②</span>タイム・メモ<span class="setnote">（この1セットで記録）</span></div>
   <!-- 2026.11.16 追加：練習内容の選択（前回の選択を引き継ぐ） -->
   <div id="practiceHost"></div>
   <div id="preview"></div>
   <!-- 2026.11.16 Ver.3.1 変更：数字キーパッドと「123」切替ボタンを廃止 -->
   <form id="entryForm" autocomplete="off">
     <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
-    <textarea id="entry" rows="1" inputmode="text" enterkeyhint="done" placeholder="1/02/333 またはメモ"></textarea>
+    <textarea id="entry" rows="1" inputmode="text" enterkeyhint="done" placeholder="1/02/333（0分は /50/222）またはメモ"></textarea>
     <button class="btn" type="submit">追加</button>
   </form>
+  </div>
 </footer>
 
 <!-- 新規ページ作成・設定修正（共用） -->
@@ -709,26 +719,39 @@ button { cursor: pointer; }
     return v;
   }
   // 数字とスラッシュだけの入力中に、秒は59まで・秒以下は3桁までに制限
-  function liveOk(v) {
-    if (!/^[0-9\/]*$/.test(v) || v.indexOf('/') < 0) return true;
+  // 2026.11.16 Ver.3.4 変更：入れられない理由をメッセージで返す（問題なければ空文字）
+  function liveCheck(v) {
+    if (!/^[0-9\/]*$/.test(v) || v.indexOf('/') < 0) return '';
+    var ex = '（例：1/02/333）';
     var p = v.split('/');
-    if (p.length > 3) return false;
-    if (p[0] === '' || p[0].length > 2) return false;
+    if (p.length > 3) return '「／」は2つまでです' + ex;
+    // 2026.11.16 Ver.3.5 変更：先頭の分が空（/50/222）は 0分として許可
+    if (p[0].length > 2) return '分は2桁までです' + ex;
     if (p.length >= 2) {
-      if (p[1].length > 2) return false;
-      if (p[1] !== '' && Number(p[1]) > 59) return false;
+      if (p[1].length > 2) return '秒は2桁までです' + ex;
+      if (p[1] !== '' && Number(p[1]) > 59) return '秒は59までです' + ex;
     }
     if (p.length === 3) {
-      if (p[1] === '') return false;
-      if (p[2].length > 3) return false;
+      if (p[1] === '') return '先に「秒」の数字を入れてください' + ex;
+      if (p[2].length > 3) return '秒以下は3桁までです' + ex;
     }
-    return true;
+    return '';
+  }
+  // 2026.11.16 Ver.3.4 追加：登録時のチェック。数字と「／」だけで、タイムの形にならない入力（貼り付け等）をはじく
+  function timeError(raw) {
+    var v = norm(raw);
+    if (!/^[0-9\/]+$/.test(v) || v.indexOf('/') < 0) return '';
+    if (parseTime(v)) return '';
+    var m = /^(\d{0,2})\/(\d{1,2})\/(\d{1,3})$/.exec(v);
+    if (m && Number(m[2]) > 59) return '秒は59までです（例：1/02/333）';
+    return 'タイムの形が違います（例：1/02/333）';
   }
   // 1/02/333 → 1分02秒333（秒以下が3桁未満なら右を0で埋める：36 → 360）
   function parseTime(v) {
-    var m = /^(\d{1,2})\/(\d{1,2})\/(\d{1,3})$/.exec(v);
+    // 2026.11.16 Ver.3.5 変更：分を省略した「/50/222」は 0分50秒222 として扱う（0/50/222 と同じ）
+    var m = /^(\d{0,2})\/(\d{1,2})\/(\d{1,3})$/.exec(v);
     if (!m) return null;
-    var min = Number(m[1]);
+    var min = m[1] === '' ? 0 : Number(m[1]);
     var sec = Number(m[2]);
     if (sec > 59) return null;
     var ms3 = m[3];
@@ -781,22 +804,31 @@ button { cursor: pointer; }
     function show() {
       var t = parseTime(norm(inp.value));
       pv.textContent = t ? '→ ' + t.text : '';
+      pv.classList.remove('warn');
       grow();
+    }
+    // 2026.11.16 Ver.3.4 追加：あり得ないタイムのメッセージ表示
+    function warn(msg) {
+      pv.textContent = '⚠ ' + msg;
+      pv.classList.add('warn');
     }
     // 2026.11.13 変更：日本語IME入力中のカーソル・変換状態を保護
     function apply() {
       var v = norm(inp.value);
+      var why = liveCheck(v);
 
-      if (!liveOk(v)) {
+      if (why) {
         inp.value = prev;
+        show();
+        warn(why);
       } else {
         // 値が変わった場合だけ再代入する
         if (inp.value !== v) {
           inp.value = v;
         }
         prev = v;
+        show();
       }
-      show();
     }
     inp.addEventListener('input', function (e) {
       if (e.isComposing) return;
@@ -805,11 +837,14 @@ button { cursor: pointer; }
     inp.addEventListener('compositionend', apply);
     var api = {
       show: show,
+      warn: warn,
       reset: function () { prev = ''; inp.value = ''; pv.textContent = ''; grow(); },
       // 2026.11.13 変更：キーパッド用（末尾に1文字追加／1文字消す）
       append: function (ch) {
         var v = inp.value + ch;
-        if (liveOk(v)) { inp.value = v; prev = v; show(); }
+        var why = liveCheck(v);
+        if (!why) { inp.value = v; prev = v; show(); }
+        else { warn(why); }
       },
       backspace: function () {
         var v = inp.value.slice(0, -1);
@@ -863,15 +898,7 @@ button { cursor: pointer; }
     $('entryForm').querySelectorAll('textarea,button').forEach(function (e) { e.disabled = !p; });
     barPractice.setDisabled(!p);
     if (!p) {
-<<<<<<< HEAD
       empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のページ（場所）を作成できます。';
-=======
-      empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のノートを作成できます。';
-      // 2026.11.13 Ver.2.6.5：ページが無い時もバージョンを表示
-      var ev = el('span', '', $('ver').textContent);
-      ev.id = 'emptyVer';
-      empty.appendChild(ev);
->>>>>>> 71730ac315013017422075b38e14161844322f7c
       return;
     }
     $('infoDate').textContent = formatDate(p.date);
@@ -931,6 +958,11 @@ button { cursor: pointer; }
       toast('空欄は保存できません（削除は ✕ で）');
       return false;
     }
+    var terr = timeError(raw);
+    if (terr) {
+      toast(terr);
+      return false;
+    }
     var idx = indexOfEntry(p, e.id);
     if (idx < 0) return false;
     var ne = buildEntry(raw);
@@ -981,6 +1013,11 @@ button { cursor: pointer; }
         label: '挿入', submit: true,
         onClick: function (raw, practice) {
           if (!raw) return;
+          var terr = timeError(raw);
+          if (terr) {
+            toast(terr);
+            return;
+          }
           var idx = indexOfEntry(p, e.id);
           if (idx < 0) return;
           var ne = buildEntry(raw);
@@ -1321,6 +1358,13 @@ button { cursor: pointer; }
     if (!p) return;
     var raw = entry.value.trim();
     if (!raw) return;
+    // 2026.11.16 Ver.3.4 追加：あり得ないタイムはメッセージを出して登録しない
+    var terr = timeError(raw);
+    if (terr) {
+      rules.warn(terr);
+      toast(terr);
+      return;
+    }
     var ne = buildEntry(raw);
     if (ne.type === 'time') {
       var practice = barPractice.get();
