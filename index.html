@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 <!-- 2026.11.16 Ver.3.1 練習名を大きく表示／BESTを練習ごとに金色表示／独自数字キーを廃止し通常キーボードのみに変更 -->
+=======
+<!-- 2026.11.13 Ver.2.6.5 新規ウィンドウを渋い緑に変更 -->
+>>>>>>> 71730ac315013017422075b38e14161844322f7c
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -148,7 +152,12 @@ button { cursor: pointer; }
 /* 2026.11.13 変更：バージョン表示（日付の右横） */
 #infoHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 #ver { color: #9aa6b5; font-size: 12px; white-space: nowrap; }
+<<<<<<< HEAD
 /* 2026.11.16 変更：大見出しは「場所」を表示（旧：練習内容） */
+=======
+/* 2026.11.13 Ver.2.6.5：ページが無い時もバージョンを表示 */
+#emptyVer { display: block; margin-top: 24px; text-align: right; color: #9aa6b5; font-size: 12px; }
+>>>>>>> 71730ac315013017422075b38e14161844322f7c
 #infoPractice { font-size: 20px; font-weight: 750; letter-spacing: .01em; margin: 4px 0 8px; word-break: break-word; color: #20384c; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 14px; }
@@ -260,9 +269,9 @@ button { cursor: pointer; }
   padding: calc(16px + env(safe-area-inset-top)) 12px 24px;
 }
 #overlay.open { display: block; }
-#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #EAF7ED; border: 1px solid #D2E6D7; border-radius: 12px; }
+#newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #A9B89E; /* 2026.11.13 Ver.2.6 渋い緑 */ border: 1px solid #D2E6D7; border-radius: 12px; }
 #newForm h2 { margin: 0 0 12px; font-size: 18px; }
-#newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: var(--sub); }
+#newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: #2f3d2a; } /* 2026.11.13 Ver.2.6 緑背景で読みやすく */
 #newForm input, #newForm select {
   display: block;
   width: 100%;
@@ -340,8 +349,13 @@ button { cursor: pointer; }
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
   <div id="empty">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</div>
   <section id="info" hidden>
+<<<<<<< HEAD
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
     <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.1  nakaZ</span></div>
+=======
+    <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.6.5  nakaZ</span></div>
+>>>>>>> 71730ac315013017422075b38e14161844322f7c
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -849,7 +863,15 @@ button { cursor: pointer; }
     $('entryForm').querySelectorAll('textarea,button').forEach(function (e) { e.disabled = !p; });
     barPractice.setDisabled(!p);
     if (!p) {
+<<<<<<< HEAD
       empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のページ（場所）を作成できます。';
+=======
+      empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のノートを作成できます。';
+      // 2026.11.13 Ver.2.6.5：ページが無い時もバージョンを表示
+      var ev = el('span', '', $('ver').textContent);
+      ev.id = 'emptyVer';
+      empty.appendChild(ev);
+>>>>>>> 71730ac315013017422075b38e14161844322f7c
       return;
     }
     $('infoDate').textContent = formatDate(p.date);
