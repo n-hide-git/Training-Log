@@ -1,4 +1,4 @@
-<!-- 2026.11.13 Ver.2.5 選択欄をライトグリーンに調整 -->
+<!-- 2026.11.16 Ver.3.1 練習名を大きく表示／BESTを練習ごとに金色表示／独自数字キーを廃止し通常キーボードのみに変更 -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -6,7 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ジムカーナ練習記録</title>
 <style>
-/* 2026.11.13 */
+/* 2026.11.16 */
+/* 2026.11.16 Ver.3.1：練習名タグを大きく。独自数字キーパッドを廃止（通常キーボードのみ） */
+/* 2026.11.16 Ver.3.0：ページ＝日付×場所。タイム行に練習内容（ドロップダウン）を追加 */
 /* 2026.11.13 Ver.2.5：選択欄全般を淡いグリーンに統一。メイン表示色は維持 */
 :root {
   color-scheme: light;
@@ -146,6 +148,7 @@ button { cursor: pointer; }
 /* 2026.11.13 変更：バージョン表示（日付の右横） */
 #infoHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 #ver { color: #9aa6b5; font-size: 12px; white-space: nowrap; }
+/* 2026.11.16 変更：大見出しは「場所」を表示（旧：練習内容） */
 #infoPractice { font-size: 20px; font-weight: 750; letter-spacing: .01em; margin: 4px 0 8px; word-break: break-word; color: #20384c; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { padding: 3px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: 14px; }
@@ -170,6 +173,10 @@ button { cursor: pointer; }
 .entry.time .body { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
 /* 2026.11.13 追加：各記録の登録時刻・更新時刻 */
 .entry .stamp { display: block; margin-top: 3px; color: #8994a3; font-size: 11px; line-height: 1.3; font-weight: 400; text-align: right; font-variant-numeric: tabular-nums; }
+/* 2026.11.16 追加：タイム行の練習内容タグ */
+/* 2026.11.16 Ver.3.1 変更：練習名を大きく（12px → 18px・太字） */
+.entry .ptag { display: inline-block; margin-left: 10px; padding: 3px 14px; font-size: 18px; font-weight: 700; color: var(--green-dark); background: #E3F1E6; border: 1px solid #BFDCC6; border-radius: 999px; vertical-align: middle; }
+.entry.best .ptag { color: var(--gold-text); background: rgba(233, 185, 73, 0.25); border-color: var(--gold); }
 .entry.memo { background: #f1f5f8; }
 .entry.memo .body { font-size: 15px; color: var(--sub); white-space: pre-wrap; word-break: break-word; padding-left: 12px; }
 .entry.best { background: rgba(242, 183, 5, 0.22); border-left: 4px solid var(--gold); }
@@ -197,6 +204,19 @@ button { cursor: pointer; }
 .epreview { min-height: 18px; padding: 2px 4px 0; font-size: 14px; color: var(--gold-text); }
 .ebtns { display: flex; gap: 6px; margin-top: 6px; }
 .ebtns .btn { flex: 1; height: 40px; padding: 0 8px; }
+/* 2026.11.16 追加：練習内容の選択（下の入力欄・修正欄で共用） */
+.pcontrol { display: flex; gap: 6px; margin-bottom: 6px; }
+.pcontrol .psel, .pcontrol .pother {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  background: #F2F9F3;
+  border: 1px solid #D2E6D7;
+  border-radius: 8px;
+}
+.pcontrol .pother[hidden] { display: none; }
+.editor .pcontrol { margin: 6px 0 0; }
 
 /* ===== 固定フッター（入力） ===== */
 #bar {
@@ -227,28 +247,7 @@ button { cursor: pointer; }
 }
 #bar .btn { height: 46px; padding: 0 12px; }
 
-/* 2026.11.13 変更：数字キーパッド（文字入力中でも一瞬で数字を打てる） */
-#keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px; }
-#keypad[hidden] { display: none; }
-#keypad button {
-  height: 46px;
-  font-size: 22px;
-  font-weight: 600;
-  background: #F2F9F3;
-  border: 1px solid #D2E6D7;
-  border-radius: 8px;
-  touch-action: manipulation;
-  -webkit-user-select: none;
-  user-select: none;
-}
-#keypad button:active { background: var(--panel); }
-#keypad .fn { background: var(--panel); font-size: 18px; }
-/* 2026.11.13 変更：キーパッド表示中は、同じ働きの「追加」「／」「保存」ボタンを隠して1つにする */
-body.numpad #entryForm button[type="submit"],
-body.numpad #slashBtn,
-body.numpad .editor .erow .btn,
-body.numpad .ebtns .btn.primary { display: none; }
-#keypad .wide { grid-column: span 3; background: var(--accent); border-color: var(--accent); color: #fff; font-size: 18px; }
+/* 2026.11.16 Ver.3.1 変更：独自の数字キーパッドを廃止（通常キーボードのみ） */
 
 /* ===== 新規ページ入力・設定修正 ===== */
 #overlay {
@@ -290,7 +289,7 @@ body.numpad .ebtns .btn.primary { display: none; }
 #newForm #fTemp, #newForm #fWeather { background: #F5FBF6; }
 #newForm input::placeholder { color: #9aa6b5; }
 #newForm .req { margin-left: 6px; font-size: 12px; color: #9aa6b5; }
-/* 2026.11.13 変更：場所・練習内容を「選択も直接入力もできる窓」に変更 */
+/* 2026.11.13 変更：場所を「選択も直接入力もできる窓」に変更 */
 #newForm .combo { display: flex; gap: 6px; }
 #newForm .combo input { flex: 1; min-width: 0; }
 #newForm .combo select { width: 110px; flex: none; }
@@ -312,7 +311,7 @@ body.numpad .ebtns .btn.primary { display: none; }
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
-  z-index: 20;
+  z-index: 40;
 }
 #toast.show { opacity: 1; }
 </style>
@@ -322,7 +321,8 @@ body.numpad .ebtns .btn.primary { display: none; }
 <!-- 固定ヘッダー：ページ選択 -->
 <header id="top">
   <div id="topRow">
-    <select id="pageSel" aria-label="選択した日付のノート"></select>
+    <!-- 2026.11.16 変更：選んだ日付の「場所」ページを選ぶ -->
+    <select id="pageSel" aria-label="選択した日付の場所"></select>
     <button id="dateBtn" class="btn sub" type="button" aria-label="日付変更">日付</button>
     <input id="datePicker" type="date" aria-label="表示する日付">
     <button id="newBtn" class="btn" type="button">＋新規</button>
@@ -337,43 +337,29 @@ body.numpad .ebtns .btn.primary { display: none; }
 
 <!-- 本文 -->
 <main id="main">
-  <div id="empty">まだ記録がありません。<br>「＋新規」から練習ページを作成してください。</div>
+  <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
+  <div id="empty">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</div>
   <section id="info" hidden>
-    <!-- 2026.11.13 変更：日付の横にバージョン表示 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.2.5  nakaZ</span></div>
+    <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.1  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
       <button id="infoEdit" class="btn sub" type="button">設定を修正</button>
       <button id="infoDel" class="btn danger" type="button">このページを削除</button>
     </div>
-    <div id="infoHint">記録の行をダブルタップ（PCはダブルクリック）で修正・挿入できます。上の日付や練習名をダブルタップすると設定を修正できます。</div>
+    <div id="infoHint">記録の行をダブルタップ（PCはダブルクリック）で修正・挿入できます。上の日付や場所をダブルタップすると設定を修正できます。タイムには、下の欄で選んだ練習内容が付きます。</div>
   </section>
   <div id="list"></div>
 </main>
 
 <!-- 固定フッター：タイム・メモ入力 -->
 <footer id="bar">
+  <!-- 2026.11.16 追加：練習内容の選択（前回の選択を引き継ぐ） -->
+  <div id="practiceHost"></div>
   <div id="preview"></div>
-  <!-- 2026.11.13 変更：数字キーパッド -->
-  <div id="keypad" hidden>
-    <button type="button" data-k="1">1</button>
-    <button type="button" data-k="2">2</button>
-    <button type="button" data-k="3">3</button>
-    <button type="button" data-k="bs" class="fn" aria-label="1文字消す">⌫</button>
-    <button type="button" data-k="4">4</button>
-    <button type="button" data-k="5">5</button>
-    <button type="button" data-k="6">6</button>
-    <button type="button" data-k="/" class="fn">／</button>
-    <button type="button" data-k="7">7</button>
-    <button type="button" data-k="8">8</button>
-    <button type="button" data-k="9">9</button>
-    <button type="button" data-k="kana" class="fn" aria-label="文字キーボードに切替">あ</button>
-    <button type="button" data-k="0">0</button>
-    <button type="button" data-k="ok" class="wide" id="kOk">追加</button>
-  </div>
+  <!-- 2026.11.16 Ver.3.1 変更：数字キーパッドと「123」切替ボタンを廃止 -->
   <form id="entryForm" autocomplete="off">
-    <button id="modeBtn" class="btn sub" type="button" aria-label="キーボード切替">123</button>
     <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
     <textarea id="entry" rows="1" inputmode="text" enterkeyhint="done" placeholder="1/02/333 またはメモ"></textarea>
     <button class="btn" type="submit">追加</button>
@@ -383,7 +369,8 @@ body.numpad .ebtns .btn.primary { display: none; }
 <!-- 新規ページ作成・設定修正（共用） -->
 <div id="overlay">
   <form id="newForm" autocomplete="off">
-    <h2 id="formTitle">新しい練習ページ</h2>
+    <!-- 2026.11.16 変更：練習内容の欄を削除（タイム行ごとに記入するため） -->
+    <h2 id="formTitle">新しいページ（日付・場所）</h2>
 
     <label>日付<span class="req">必須</span>
       <input id="fDate" type="date" required>
@@ -403,13 +390,6 @@ body.numpad .ebtns .btn.primary { display: none; }
     <label>気温（℃）
       <input id="fTemp" type="number" inputmode="decimal" step="0.1" placeholder="例 18">
     </label>
-
-    <!-- 2026.11.13 変更：練習内容も、直接入力または右の「選択」から選べる -->
-    <div class="lab">何を練習？（直接入力、または右から選択）</div>
-    <div class="combo">
-      <input id="fPractice" type="text" required placeholder="必須：練習内容を入力">
-      <select id="fPracticePick" aria-label="練習内容を選ぶ"></select>
-    </div>
 
     <div id="newBtns">
       <button id="newCancel" class="btn sub" type="button">キャンセル</button>
@@ -437,16 +417,20 @@ body.numpad .ebtns .btn.primary { display: none; }
 <div id="toast"></div>
 
 <script>
-// 2026.11.13
+// 2026.11.16
 (function () {
   'use strict';
 
   var KEY = 'motoGymkhanaLog.v1';
-  // 2026.11.13 変更：「その他」を廃止（直接入力できるため）
+  // 2026.11.16 追加：旧形式からの変換前データを残すバックアップ用キー
+  var BACKUP_KEY = 'motoGymkhanaLog.v1.backupBeforeV3';
+  // 2026.11.16 追加：保存データの形式番号（2 = Ver.3.0 の「日付×場所」形式）
+  var SCHEMA = 2;
   // 2026.11.13 変更：場所にも「その他」を追加（選ぶと入力窓が空になり、手入力できる）
   var PLACES = ['キョウセイ２輪', 'キョウセイ４輪', 'PPS', 'レインボー', 'その他'];
-  // 2026.11.13 変更：練習内容の選択肢（「その他」を選ぶと入力窓が空になり、手入力できる）
-  var PRACTICES = ['8の字GP', '回転弁当', '牛丼弁当', 'アタックコース', 'その他'];
+  // 2026.11.16 変更：練習内容の基本の選択肢。「その他」は別に末尾へ付ける（手入力した内容は次回から一覧に残る）
+  var PRACTICES = ['8の字GP', '回転弁当', '牛丼弁当', 'アタックコース'];
+  var OTHER = 'その他';
   var WEATHERS = ['晴れ', '曇り', '雨'];
   var WD = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -458,24 +442,87 @@ body.numpad .ebtns .btn.primary { display: none; }
   var editing = null;
   // 2026.11.13 変更：設定修正中のページID（null なら新規作成）
   var formEditId = null;
+  // 2026.11.16 追加：旧形式から変換した場合に、起動後にお知らせを出す
+  var migratedNotice = false;
+
+  // ---------- 2026.11.16 追加：旧形式（Ver.2.5以前）→ 新形式（Ver.3.0）への変換 ----------
+  // ・同じ日付＋同じ場所のページを1つに統合（天気・気温は最初のページの値を残す）
+  // ・旧ページの「練習内容」を、そのページ内の各タイムに付ける（メモは練習内容なし）
+  // ・統合後の並びは、旧ページの作成順に、各ページ内の順番をそのまま保つ
+  function migrateData(s) {
+    if (!s || !Array.isArray(s.pages)) return s;
+    if (s.schema === SCHEMA) return s;
+    var order = s.pages.filter(function (p) { return p && typeof p === 'object'; }).sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return (a.created || 0) - (b.created || 0);
+    });
+    var groups = {};
+    var merged = [];
+    var idMap = {};
+    order.forEach(function (p) {
+      var place = placeText(p);
+      var key = p.date + '|' + place;
+      var base = groups[key];
+      if (!base) {
+        base = {
+          id: p.id,
+          created: p.created,
+          updatedAt: p.updatedAt || null,
+          date: p.date,
+          place: place,
+          placeOther: '',
+          weather: p.weather,
+          temp: p.temp,
+          entries: []
+        };
+        groups[key] = base;
+        merged.push(base);
+      }
+      idMap[p.id] = base.id;
+      (Array.isArray(p.entries) ? p.entries : []).forEach(function (e) {
+        if (!e || typeof e !== 'object') return;
+        if (e.type === 'time') e.practice = e.practice || p.practice || '';
+        else e.practice = '';
+        base.entries.push(e);
+      });
+    });
+    s.pages = merged;
+    if (s.current && idMap[s.current]) s.current = idMap[s.current];
+    if (typeof s.lastPractice !== 'string') s.lastPractice = '';
+    s.schema = SCHEMA;
+    return s;
+  }
 
   // ---------- 保存・読込 ----------
+  // 2026.11.16 変更：旧形式なら、変換前のデータをバックアップしてから新形式に変換する
   function load() {
+    var raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) { /* 読めない場合は空で開始 */ }
     try {
-      var s = JSON.parse(localStorage.getItem(KEY));
+      var s = JSON.parse(raw);
       if (s && Array.isArray(s.pages)) {
         if (!s.current) s.current = null;
         if (!s.selectedDate) s.selectedDate = '';
+        if (s.schema !== SCHEMA) {
+          try {
+            if (!localStorage.getItem(BACKUP_KEY)) localStorage.setItem(BACKUP_KEY, raw);
+          } catch (e2) { /* バックアップできなくても変換は続ける */ }
+          migrateData(s);
+          try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e3) { /* 次回の保存時に再度書き込む */ }
+          migratedNotice = true;
+        }
+        if (typeof s.lastPractice !== 'string') s.lastPractice = '';
         return s;
       }
     } catch (e) { /* 読めない場合は空で開始 */ }
-    return { pages: [], current: null, selectedDate: '' };
+    return { pages: [], current: null, selectedDate: '', lastPractice: '', schema: SCHEMA };
   }
   var state = load();
 
   function save() {
     try {
       state.selectedDate = selectedDate;
+      state.schema = SCHEMA;
       localStorage.setItem(KEY, JSON.stringify(state));
     } catch (e) {
       toast('保存に失敗しました（容量不足など）');
@@ -551,6 +598,14 @@ body.numpad .ebtns .btn.primary { display: none; }
     }
     return -1;
   }
+  // 2026.11.16 追加：同じ日付・同じ場所のページを探す（exceptId のページは除く）
+  function findPageByDatePlace(date, place, exceptId) {
+    for (var i = 0; i < state.pages.length; i++) {
+      var p = state.pages[i];
+      if (p.id !== exceptId && p.date === date && placeText(p) === place) return p;
+    }
+    return null;
+  }
 
   // 2026.11.13 変更：ダブルクリック（PC）／ダブルタップ（スマホ）
   function onDouble(target, fn) {
@@ -569,6 +624,64 @@ body.numpad .ebtns .btn.primary { display: none; }
         last = now;
       }
     });
+  }
+
+  // ---------- 2026.11.16 追加：練習内容の選択（下の入力欄と修正欄で共用） ----------
+  // 基本の選択肢 ＋ これまでに手入力した練習内容 ＋「その他」
+  function practiceList() {
+    var list = PRACTICES.slice();
+    state.pages.forEach(function (p) {
+      (Array.isArray(p.entries) ? p.entries : []).forEach(function (e) {
+        if (e && e.practice && e.practice !== OTHER && list.indexOf(e.practice) < 0) list.push(e.practice);
+      });
+    });
+    return list;
+  }
+  function buildPracticeControl(initial) {
+    var root = el('div', 'pcontrol');
+    var sel = el('select', 'psel');
+    sel.setAttribute('aria-label', '何の練習のタイムか');
+    var other = el('input', 'pother');
+    other.type = 'text';
+    other.placeholder = '練習内容を入力';
+    other.hidden = true;
+    root.appendChild(sel);
+    root.appendChild(other);
+    function fill(value) {
+      var v = value || '';
+      sel.textContent = '';
+      var head = el('option', '', '▼ 何の練習？');
+      head.value = '';
+      sel.appendChild(head);
+      practiceList().forEach(function (t) {
+        var o = el('option', '', t);
+        o.value = t;
+        sel.appendChild(o);
+      });
+      var oo = el('option', '', OTHER);
+      oo.value = OTHER;
+      sel.appendChild(oo);
+      sel.value = v;
+      if (sel.value !== v) sel.value = '';
+      other.hidden = sel.value !== OTHER;
+      other.value = '';
+    }
+    sel.addEventListener('change', function () {
+      other.hidden = sel.value !== OTHER;
+      if (!other.hidden) {
+        other.value = '';
+        other.focus();
+      }
+    });
+    fill(initial);
+    return {
+      root: root,
+      get: function () {
+        return sel.value === OTHER ? other.value.trim() : sel.value;
+      },
+      set: function (v) { fill(v); },
+      setDisabled: function (d) { sel.disabled = d; other.disabled = d; }
+    };
   }
 
   // ---------- タイム入力ルール ----------
@@ -612,10 +725,11 @@ body.numpad .ebtns .btn.primary { display: none; }
     };
   }
   // 2026.11.13 変更：入力文字から記録（タイム or メモ）を作る
+  // 2026.11.16 変更：practice（練習内容）の欄を追加。メモは常に空
   function buildEntry(raw) {
     var t = parseTime(norm(raw));
-    if (t) return { type: 'time', ms: t.ms, text: t.text };
-    return { type: 'memo', text: raw };
+    if (t) return { type: 'time', ms: t.ms, text: t.text, practice: '' };
+    return { type: 'memo', text: raw, practice: '' };
   }
   // 2026.11.13 変更：記録を修正用の入力文字（1/02/333）に戻す
   function editText(e) {
@@ -698,49 +812,15 @@ body.numpad .ebtns .btn.primary { display: none; }
     return api;
   }
 
-  // 2026.11.13 変更：数字キーパッドと入力方式の切替
-  // numMode=true：画面の数字キーパッドで入力（システムのキーボードは出さない）
-  // numMode=false：システムの文字キーボード
-  // 初期状態は文字入力（日本語キーボード）
-  var numMode = false;
-  var activeInput = entry;
-  document.addEventListener('focusin', function (e) {
-    if (e.target && e.target._rules) {
-      activeInput = e.target;
-      updateOk();
-    }
-  });
-  // キーパッドの実行ボタンの表示を、入力中の欄に合わせる（追加／保存／挿入）
-  function updateOk() {
-    var inp = document.body.contains(activeInput) ? activeInput : entry;
-    $('kOk').textContent = inp._okLabel || '追加';
-  }
-  function modeAttr() { return numMode ? 'none' : 'text'; }
-  function applyMode() {
-    $('keypad').hidden = !numMode;
-    document.body.classList.toggle('numpad', numMode);
-    $('modeBtn').textContent = numMode ? 'あ' : '123';
-    document.querySelectorAll('input,textarea').forEach(function (i) {
-      if (i._rules) i.setAttribute('inputmode', modeAttr());
-    });
-  }
-  function toggleMode() {
-    numMode = !numMode;
-    applyMode();
-    var inp = document.body.contains(activeInput) ? activeInput : entry;
-    inp.blur();
-    inp.focus();
-  }
-  function submitForm(form) {
-    if (!form) return;
-    if (form.requestSubmit) {
-      form.requestSubmit();
-    } else {
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-    }
-  }
+  // 2026.11.16 Ver.3.1 変更：独自の数字キーパッドと入力方式の切替を廃止（通常キーボードのみ）
+
+  // 2026.11.16 追加：下の入力欄の練習内容（前回の選択を state.lastPractice から引き継ぐ）
+  var barPractice = buildPracticeControl(state.lastPractice);
+  $('practiceHost').appendChild(barPractice.root);
+  function syncBarPractice() { barPractice.set(state.lastPractice); }
 
   // ---------- 描画 ----------
+  // 2026.11.16 変更：選んだ日付のページ（＝場所）を一覧にする
   function renderSelect() {
     var pages = sortedPages().filter(function (p) { return p.date === selectedDate; });
     pageSel.textContent = '';
@@ -752,30 +832,30 @@ body.numpad .ebtns .btn.primary { display: none; }
       return;
     }
     pageSel.disabled = false;
-    pages.forEach(function (p, index) {
-      var label = (index + 1) + '冊目　' + p.practice;
-      var opt = el('option', '', label);
+    pages.forEach(function (p) {
+      var opt = el('option', '', placeText(p));
       opt.value = p.id;
       if (p.id === state.current) opt.selected = true;
       pageSel.appendChild(opt);
     });
   }
 
+  // 2026.11.16 変更：大見出しは場所、チップは天気・気温
   function renderInfo() {
     var p = currentPage();
     var empty = $('empty');
     empty.hidden = !!p;
     $('info').hidden = !p;
     $('entryForm').querySelectorAll('textarea,button').forEach(function (e) { e.disabled = !p; });
+    barPractice.setDisabled(!p);
     if (!p) {
-      empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のノートを作成できます。';
+      empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のページ（場所）を作成できます。';
       return;
     }
     $('infoDate').textContent = formatDate(p.date);
-    $('infoPractice').textContent = p.practice;
+    $('infoPractice').textContent = placeText(p);
     var chips = $('infoChips');
     chips.textContent = '';
-    chips.appendChild(el('span', 'chip', placeText(p)));
     chips.appendChild(el('span', 'chip', p.weather));
     if (p.temp !== '' && p.temp !== null && p.temp !== undefined) {
       chips.appendChild(el('span', 'chip', p.temp + '℃'));
@@ -783,8 +863,9 @@ body.numpad .ebtns .btn.primary { display: none; }
   }
 
   // 2026.11.13 変更：修正・挿入用のエディタ行
-  // buttons: [{label, cls, submit, onClick(入力値)}]
-  function buildEditor(initial, placeholder, buttons) {
+  // 2026.11.16 変更：練習内容の選択を追加。onClick(入力値, 練習内容)
+  // buttons: [{label, cls, submit, onClick(入力値, 練習内容)}]
+  function buildEditor(initial, placeholder, buttons, practiceInit) {
     var form = el('form', 'editor');
     form.autocomplete = 'off';
     var row = el('div', 'erow');
@@ -794,9 +875,9 @@ body.numpad .ebtns .btn.primary { display: none; }
     inp.rows = 1;
     inp.value = initial;
     inp.placeholder = placeholder;
-    inp.setAttribute('inputmode', modeAttr());
     var pv = el('div', 'epreview');
     var rules = attachRules(inp, pv);
+    var pc = buildPracticeControl(practiceInit || '');
     rules.show();
     slash.addEventListener('click', rules.insertSlash);
     row.appendChild(slash);
@@ -805,24 +886,25 @@ body.numpad .ebtns .btn.primary { display: none; }
     buttons.forEach(function (b) {
       var bt = el('button', 'btn ' + (b.cls || '') + (b.submit ? ' primary' : ''), b.label);
       bt.type = b.submit ? 'submit' : 'button';
-      if (b.submit) inp._okLabel = b.label;
       if (!b.submit) {
-        bt.addEventListener('click', function () { b.onClick(inp.value.trim()); });
+        bt.addEventListener('click', function () { b.onClick(inp.value.trim(), pc.get()); });
       }
       btns.appendChild(bt);
     });
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var ok = buttons.filter(function (b) { return b.submit; })[0];
-      if (ok) ok.onClick(inp.value.trim());
+      if (ok) ok.onClick(inp.value.trim(), pc.get());
     });
     form.appendChild(row);
     form.appendChild(pv);
+    form.appendChild(pc.root);
     form.appendChild(btns);
     return form;
   }
 
-  function saveEdit(p, e, raw) {
+  // 2026.11.16 変更：練習内容（practice）を受け取り、タイムなら必須にする
+  function saveEdit(p, e, raw, practice) {
     if (!raw) {
       toast('空欄は保存できません（削除は ✕ で）');
       return false;
@@ -830,6 +912,13 @@ body.numpad .ebtns .btn.primary { display: none; }
     var idx = indexOfEntry(p, e.id);
     if (idx < 0) return false;
     var ne = buildEntry(raw);
+    if (ne.type === 'time') {
+      if (!practice) {
+        toast('何の練習のタイムか選んでください');
+        return false;
+      }
+      ne.practice = practice;
+    }
     ne.id = e.id;
     ne.createdAt = e.createdAt || null;
     ne.updatedAt = Date.now();
@@ -840,17 +929,18 @@ body.numpad .ebtns .btn.primary { display: none; }
 
   function buildEditRow(p, e) {
     var orig = editText(e);
+    var origPractice = e.practice || '';
     return buildEditor(orig, '1/02/333 またはメモ', [
       {
         label: '保存', submit: true,
-        onClick: function (raw) {
-          if (saveEdit(p, e, raw)) { editing = null; renderList(); }
+        onClick: function (raw, practice) {
+          if (saveEdit(p, e, raw, practice)) { editing = null; renderList(); }
         }
       },
       {
         label: 'この下に挿入', cls: 'sub',
-        onClick: function (raw) {
-          if (raw !== orig && !saveEdit(p, e, raw)) return;
+        onClick: function (raw, practice) {
+          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice)) return;
           editing = { id: e.id, mode: 'insert' };
           renderList();
         }
@@ -859,23 +949,33 @@ body.numpad .ebtns .btn.primary { display: none; }
         label: '取消', cls: 'sub',
         onClick: function () { editing = null; renderList(); }
       }
-    ]);
+    ], origPractice);
   }
 
+  // 2026.11.16 変更：挿入時も練習内容を付ける（前回の選択を引き継ぐ）
   function buildInsertRow(p, e) {
     return buildEditor('', '挿入：1/02/333 またはメモ', [
       {
         label: '挿入', submit: true,
-        onClick: function (raw) {
+        onClick: function (raw, practice) {
           if (!raw) return;
           var idx = indexOfEntry(p, e.id);
           if (idx < 0) return;
           var ne = buildEntry(raw);
+          if (ne.type === 'time') {
+            if (!practice) {
+              toast('何の練習のタイムか選んでください');
+              return;
+            }
+            ne.practice = practice;
+            state.lastPractice = practice;
+          }
           ne.id = uid();
           ne.createdAt = Date.now();
           ne.updatedAt = null;
           p.entries.splice(idx + 1, 0, ne);
           save();
+          syncBarPractice();
           editing = { id: ne.id, mode: 'insert' };
           renderList();
         }
@@ -884,13 +984,15 @@ body.numpad .ebtns .btn.primary { display: none; }
         label: '完了', cls: 'sub',
         onClick: function () { editing = null; renderList(); }
       }
-    ]);
+    ], state.lastPractice);
   }
 
+  // 2026.11.16 変更：タイム行に練習内容のタグを表示
   function buildRow(p, e, isBest) {
     var row = el('div', 'entry ' + e.type + (isBest ? ' best' : ''));
     var body = el('div', 'body', e.text);
     if (isBest) body.appendChild(el('span', 'badge', 'BEST'));
+    if (e.type === 'time' && e.practice) body.appendChild(el('span', 'ptag', e.practice));
     var stamp = entryStamp(e);
     if (stamp) body.appendChild(el('span', 'stamp', stamp));
     onDouble(body, function () {
@@ -916,15 +1018,18 @@ body.numpad .ebtns .btn.primary { display: none; }
     listEl.textContent = '';
     var p = currentPage();
     if (!p) return;
-    var best = null;
+    // 2026.11.16 Ver.3.1 変更：BESTは練習内容ごとに判定する（練習ごとに金色）
+    var best = {};
     p.entries.forEach(function (e) {
-      if (e.type === 'time' && (best === null || e.ms < best)) best = e.ms;
+      if (e.type !== 'time') return;
+      var k = e.practice || '';
+      if (best[k] === undefined || e.ms < best[k]) best[k] = e.ms;
     });
     p.entries.forEach(function (e) {
       if (editing && editing.mode === 'edit' && editing.id === e.id) {
         listEl.appendChild(buildEditRow(p, e));
       } else {
-        listEl.appendChild(buildRow(p, e, e.type === 'time' && e.ms === best));
+        listEl.appendChild(buildRow(p, e, e.type === 'time' && e.ms === best[e.practice || '']));
       }
       if (editing && editing.mode === 'insert' && editing.id === e.id) {
         listEl.appendChild(buildInsertRow(p, e));
@@ -932,7 +1037,6 @@ body.numpad .ebtns .btn.primary { display: none; }
     });
     var ei = listEl.querySelector('.editor textarea');
     if (ei) ei.focus();
-    updateOk();
   }
 
   function renderAll(scrollToBottom) {
@@ -949,6 +1053,7 @@ body.numpad .ebtns .btn.primary { display: none; }
     renderSelect();
     renderInfo();
     renderList();
+    syncBarPractice();
     main.scrollTop = scrollToBottom ? main.scrollHeight : 0;
   }
 
@@ -1041,10 +1146,11 @@ body.numpad .ebtns .btn.primary { display: none; }
     if (e.key === 'Escape' && $('calendarOverlay').classList.contains('open')) closeCalendar();
   });
 
+  // 2026.11.16 変更：削除確認の表示を「日付＋場所」に変更
   $('infoDel').addEventListener('click', function () {
     var p = currentPage();
     if (!p) return;
-    if (!confirm('このページを削除しますか？\n' + formatDate(p.date) + ' ' + p.practice + '\n（記録も全て消えます）')) return;
+    if (!confirm('このページを削除しますか？\n' + formatDate(p.date) + ' ' + placeText(p) + '\n（記録も全て消えます）')) return;
     state.pages = state.pages.filter(function (x) { return x.id !== p.id; });
     state.current = null;
     // 同じ日付に別ノートが残っていれば、その日の最後のノートを表示する。
@@ -1078,23 +1184,6 @@ body.numpad .ebtns .btn.primary { display: none; }
     $('fPlace').focus();
   });
 
-  // 2026.11.13 変更：練習内容の選択（「その他」は窓を空にして手入力）
-  var pickHead2 = el('option', '', '▼ 選択');
-  pickHead2.value = '';
-  $('fPracticePick').appendChild(pickHead2);
-  fillOptions($('fPracticePick'), PRACTICES);
-
-  $('fPracticePick').addEventListener('change', function () {
-    var v = $('fPracticePick').value;
-    if (v === 'その他') {
-      $('fPractice').value = '';
-    } else if (v) {
-      $('fPractice').value = v;
-    }
-    $('fPracticePick').selectedIndex = 0;
-    $('fPractice').focus();
-  });
-
   // page が null なら新規作成、ページを渡すとその設定の修正
   // 2026.11.13 変更：日付欄はどこをクリック（タップ）してもカレンダーが開く
   $('fDate').addEventListener('click', function () {
@@ -1103,17 +1192,17 @@ body.numpad .ebtns .btn.primary { display: none; }
     } catch (err) { /* 開けない環境では標準の動作のまま */ }
   });
 
+  // 2026.11.16 変更：練習内容の欄を削除
   function openForm(page) {
     $('newForm').reset();
     formEditId = page ? page.id : null;
-    $('formTitle').textContent = page ? '練習ページの設定を修正' : '新しい練習ページ';
+    $('formTitle').textContent = page ? 'ページの設定を修正' : '新しいページ（日付・場所）';
     $('formOk').textContent = page ? '保存' : '登録';
     if (page) {
       $('fDate').value = page.date;
       $('fPlace').value = placeText(page);
       $('fWeather').value = page.weather;
       $('fTemp').value = (page.temp === null || page.temp === undefined) ? '' : page.temp;
-      $('fPractice').value = page.practice;
     } else {
       $('fDate').value = selectedDate || todayStr();
     }
@@ -1129,16 +1218,22 @@ body.numpad .ebtns .btn.primary { display: none; }
   onDouble($('infoPractice'), function () { openForm(currentPage()); });
   onDouble($('infoChips'), function () { openForm(currentPage()); });
 
+  // 2026.11.16 変更：日付＋場所が同じページは作らない（新規なら既存ページを開く／修正なら止める）
   $('newForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var date = $('fDate').value;
     var place = $('fPlace').value.trim();
     var weather = $('fWeather').value;
     var temp = $('fTemp').value.trim();
-    var practice = $('fPractice').value.trim();
-    if (!date || !place || !practice) return;
+    if (!date || !place) return;
+
+    var dup = findPageByDatePlace(date, place, formEditId);
 
     if (formEditId) {
+      if (dup) {
+        toast('同じ日付・場所のページが既にあります');
+        return;
+      }
       var target = null;
       state.pages.forEach(function (x) { if (x.id === formEditId) target = x; });
       if (!target) { closeForm(); return; }
@@ -1147,7 +1242,6 @@ body.numpad .ebtns .btn.primary { display: none; }
       target.placeOther = '';
       target.weather = weather;
       target.temp = temp;
-      target.practice = practice;
       target.updatedAt = Date.now();
       selectedDate = date;
       state.selectedDate = selectedDate;
@@ -1156,6 +1250,17 @@ body.numpad .ebtns .btn.primary { display: none; }
       closeForm();
       renderAll(false);
       toast('設定を修正しました');
+      return;
+    }
+
+    if (dup) {
+      selectedDate = date;
+      state.selectedDate = selectedDate;
+      state.current = dup.id;
+      save();
+      closeForm();
+      renderAll(true);
+      toast('同じ日付・場所のページがあるので、そのページを開きました');
       return;
     }
 
@@ -1168,7 +1273,6 @@ body.numpad .ebtns .btn.primary { display: none; }
       placeOther: '',
       weather: weather,
       temp: temp,
-      practice: practice,
       entries: []
     };
     state.pages.push(page);
@@ -1186,24 +1290,9 @@ body.numpad .ebtns .btn.primary { display: none; }
 
   $('slashBtn').addEventListener('click', rules.insertSlash);
 
-  // 2026.11.13 変更：入力方式の切替ボタンとキーパッドの動作
-  $('modeBtn').addEventListener('click', toggleMode);
+  // 2026.11.16 Ver.3.1 変更：入力方式の切替ボタンとキーパッドの動作を廃止
 
-  // キーパッドを押しても入力欄からフォーカスが外れないようにする
-  $('keypad').addEventListener('mousedown', function (e) { e.preventDefault(); });
-  $('keypad').addEventListener('click', function (e) {
-    var b = e.target.closest ? e.target.closest('button') : null;
-    if (!b) return;
-    var inp = document.body.contains(activeInput) ? activeInput : entry;
-    var k = b.getAttribute('data-k');
-    if (k === 'kana') { toggleMode(); return; }
-    if (!inp._rules) return;
-    if (k === 'bs') inp._rules.backspace();
-    else if (k === 'ok') submitForm(inp.form);
-    else inp._rules.append(k);
-  });
-  applyMode();
-
+  // 2026.11.16 変更：タイムには練習内容が必須。選んだ練習内容を次回に引き継ぐ
   $('entryForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var p = currentPage();
@@ -1211,11 +1300,21 @@ body.numpad .ebtns .btn.primary { display: none; }
     var raw = entry.value.trim();
     if (!raw) return;
     var ne = buildEntry(raw);
+    if (ne.type === 'time') {
+      var practice = barPractice.get();
+      if (!practice) {
+        toast('何の練習のタイムか選んでください');
+        return;
+      }
+      ne.practice = practice;
+      state.lastPractice = practice;
+    }
     ne.id = uid();
     ne.createdAt = Date.now();
     ne.updatedAt = null;
     p.entries.push(ne);
     save();
+    syncBarPractice();
     rules.reset();
     editing = null;
     renderList();
@@ -1267,6 +1366,10 @@ body.numpad .ebtns .btn.primary { display: none; }
           break;
         }
       }
+      // 2026.11.16 追加：IDが違っても、日付＋場所が同じなら同じページとして統合する
+      if (!localPage) {
+        localPage = findPageByDatePlace(importedPage.date, placeText(importedPage), null);
+      }
 
       if (!localPage) {
         var usedEntryIds = {};
@@ -1316,10 +1419,11 @@ body.numpad .ebtns .btn.primary { display: none; }
       });
 
       // ページ設定は既存データを優先する。新しい形式で更新日時が明確に新しい場合だけ更新。
+      // 2026.11.16 変更：練習内容（practice）はページ設定から外した
       var localPageTime = Number(localPage.updatedAt || localPage.created || 0);
       var incomingPageTime = Number(importedPage.updatedAt || importedPage.created || 0);
       if (incomingPageTime > localPageTime && importedPage.updatedAt) {
-        ['date', 'place', 'placeOther', 'weather', 'temp', 'practice', 'updatedAt'].forEach(function (key) {
+        ['date', 'place', 'placeOther', 'weather', 'temp', 'updatedAt'].forEach(function (key) {
           if (importedPage[key] !== undefined) localPage[key] = importedPage[key];
         });
       }
@@ -1342,6 +1446,8 @@ body.numpad .ebtns .btn.primary { display: none; }
         var imported = JSON.parse(r.result);
         if (!imported || !Array.isArray(imported.pages)) throw new Error('形式が違います');
         if (!confirm('読み込んだノートを現在のデータに追加・統合します。\n既存のノートは削除しません。よろしいですか？')) return;
+        // 2026.11.16 追加：旧形式（Ver.2.5以前）のファイルは、読み込み時に新形式へ変換する
+        migrateData(imported);
         var result = mergeImportedData(imported);
         // 読み込み後は、追加されたノートがあればその日付を表示する。
         if (imported.current) {
@@ -1382,6 +1488,8 @@ body.numpad .ebtns .btn.primary { display: none; }
   }
   state.selectedDate = selectedDate;
   renderAll(true);
+  // 2026.11.16 追加：旧形式から変換した場合のお知らせ
+  if (migratedNotice) toast('Ver.3.0の形式に変換しました（変換前のデータはバックアップ済み）');
   if (!state.pages.length) openForm(null);
 })();
 </script>
