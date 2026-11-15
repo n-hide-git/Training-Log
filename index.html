@@ -1,3 +1,4 @@
+<!-- 2026.11.16 Ver.3.7 タイム・コメントを追加したらキーボードを自動で閉じる -->
 <!-- 2026.11.16 Ver.3.6 コメント（メモ）の文字を大きく・濃くして読みやすく -->
 <!-- 2026.11.16 Ver.3.5 分を省略した /50/222 を 0分50秒222 として入力できるように -->
 <!-- 2026.11.16 Ver.3.4 あり得ないタイム（例 1/80/555）に赤いメッセージを表示 -->
@@ -361,7 +362,7 @@ button { cursor: pointer; }
   <div id="empty">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.6  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.7  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -1385,7 +1386,10 @@ button { cursor: pointer; }
     editing = null;
     renderList();
     main.scrollTop = main.scrollHeight;
-    entry.focus();
+    // 2026.11.16 Ver.3.7 変更：追加したらキーボードを閉じる（以前は入力欄にカーソルを残していた）
+    entry.blur();
+    // キーボードが閉じて画面の高さが戻ったあと、最新の記録が見えるよう再度いちばん下へ
+    setTimeout(function () { main.scrollTop = main.scrollHeight; }, 250);
   });
 
   // ---------- バックアップ ----------
