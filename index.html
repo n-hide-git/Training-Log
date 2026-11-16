@@ -1,3 +1,4 @@
+<!-- 2026.11.16 Ver.3.16 入力時に画面が勝手に拡大されて右が見切れる問題の対策 -->
 <!-- 2026.11.16 Ver.3.15 気温などの入力欄を触ってキーボードが出ても、その欄が見えるよう自動スクロール -->
 <!-- 2026.11.16 Ver.3.14 ノートがない日も余白を設けてバージョンを表示 -->
 <!-- 2026.11.16 Ver.3.13 挿入後のスクロール位置を保持 -->
@@ -16,7 +17,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 2026.11.16 Ver.3.16 変更：入力欄を触ったときに画面が勝手に拡大されないよう maximum-scale=1 を追加 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>ジムカーナ練習記録</title>
 <style>
 /* 2026.11.16 */
@@ -50,6 +52,11 @@ body {
   font-size: 16px;
 }
 button, input, select { font: inherit; color: inherit; }
+/* 2026.11.16 Ver.3.16 追加：iPhone は16px未満の入力欄を触ると画面を自動拡大して右が見切れるため、入力欄の文字は16px以上にそろえる。横スクロールも出さない */
+input, select, textarea { font-size: max(16px, 1em); }
+html, body { max-width: 100%; overflow-x: hidden; }
+#overlay, #main { overflow-x: hidden; }
+#newForm, #newForm label, #newForm .combo, .pcontrol { max-width: 100%; }
 button { cursor: pointer; }
 
 /* ===== 固定ヘッダー（ページ選択） ===== */
@@ -383,10 +390,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.3.15  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.3.16  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.15  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.16  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
