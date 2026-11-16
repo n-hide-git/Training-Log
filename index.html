@@ -1,3 +1,4 @@
+<!-- 2026.11.16 Ver.4.0 写真を1枚ずつ記録の流れに追加（縮小して端末内に保存、バックアップにも含める） -->
 <!-- 2026.11.16 Ver.3.16 入力時に画面が勝手に拡大されて右が見切れる問題の対策 -->
 <!-- 2026.11.16 Ver.3.15 気温などの入力欄を触ってキーボードが出ても、その欄が見えるよう自動スクロール -->
 <!-- 2026.11.16 Ver.3.14 ノートがない日も余白を設けてバージョンを表示 -->
@@ -231,6 +232,17 @@ button { cursor: pointer; }
 #list.editing { padding-bottom: 60vh; }
 /* 2026.11.16 Ver.3.10 追加：修正・挿入中は下の入力セットを隠す */
 body.editingRow #bar { display: none; }
+/* 2026.11.16 Ver.4.0 追加：写真の行と拡大表示 */
+.entry.photo { background: #ffffff; }
+.entry.photo .body .pimg { display: block; width: 100%; max-height: 38vh; min-height: 70px; object-fit: contain; background: #eef2f6; border-radius: 8px; cursor: zoom-in; -webkit-touch-callout: default; }
+.entry.photo .body .pmiss { padding: 18px 10px; color: var(--sub); font-size: 14px; background: #eef2f6; border-radius: 8px; }
+#photoView { position: fixed; inset: 0; z-index: 50; background: rgba(10, 14, 20, .94); display: flex; flex-direction: column; }
+#photoView[hidden] { display: none; }
+#photoViewScroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; display: flex; align-items: flex-start; justify-content: center; }
+#photoViewImg { max-width: 100%; max-height: 100%; margin: auto; object-fit: contain; cursor: zoom-in; }
+#photoViewImg.full { max-width: none; max-height: none; width: auto; margin: 0; cursor: zoom-out; }
+#photoViewClose { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 10px; z-index: 2; width: 44px; height: 44px; border: none; border-radius: 50%; background: rgba(255,255,255,.9); color: #243447; font-size: 20px; }
+#photoViewHint { padding: calc(14px + env(safe-area-inset-top)) 60px 8px 12px; color: #c8d2dc; font-size: 12px; }
 /* 2026.11.16 Ver.3.4 追加：あり得ないタイムの警告表示（赤） */
 #preview.warn, .epreview.warn, #entrySet #preview.warn { color: var(--danger); font-weight: 700; }
 .ebtns { display: flex; gap: 6px; margin-top: 6px; }
@@ -289,6 +301,9 @@ body.editingRow #bar { display: none; }
 #entrySetHead .step { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #8B5E3C; color: #fff; font-size: 13px; }
 #entrySetHead .arrow { color: #8B5E3C; font-size: 12px; }
 #entrySetHead .setnote { margin-left: auto; font-size: 11px; font-weight: 400; color: #8a7360; }
+/* 2026.11.16 Ver.4.0 追加：狭い画面では見出しの補足を隠し、見出しが折り返さないようにする */
+#entrySetHead { white-space: nowrap; }
+@media (max-width: 430px) { #entrySetHead .setnote { display: none; } }
 #entrySet .pcontrol .psel, #entrySet .pcontrol .pother { border-color: #A97C50; background: #FFFBF6; font-weight: 600; color: #4A2F1B; }
 #entrySet #entry { background: #FFFBF6; border-color: #C9A67F; }
 #entrySet #entryForm .btn:not(.sub) { background: #8B5E3C; }
@@ -390,10 +405,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.3.16  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.0  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.16  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.0  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -416,6 +431,8 @@ body.editingRow #bar { display: none; }
   <!-- 2026.11.16 Ver.3.1 変更：数字キーパッドと「123」切替ボタンを廃止 -->
   <form id="entryForm" autocomplete="off">
     <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
+    <!-- 2026.11.16 Ver.4.0 追加：写真ボタン（カメラ撮影／ライブラリから1枚選ぶ） -->
+    <button id="photoBtn" class="btn sub" type="button" aria-label="写真を追加">📷</button>
     <textarea id="entry" rows="1" inputmode="text" enterkeyhint="done" placeholder="1/02/333（0分は /50/222）またはメモ"></textarea>
     <button class="btn" type="submit">追加</button>
   </form>
@@ -470,6 +487,13 @@ body.editingRow #bar { display: none; }
       <button id="calClose" class="btn sub" type="button">閉じる</button>
     </div>
   </section>
+</div>
+<!-- 2026.11.16 Ver.4.0 追加：写真の選択（隠し入力）と拡大表示 -->
+<input id="photoFile" type="file" accept="image/*" hidden>
+<div id="photoView" hidden>
+  <button id="photoViewClose" type="button" aria-label="閉じる">✕</button>
+  <div id="photoViewHint">タップで 原寸／全体 を切り替え</div>
+  <div id="photoViewScroll"><img id="photoViewImg" alt="写真"></div>
 </div>
 <div id="toast"></div>
 
@@ -615,6 +639,156 @@ body.editingRow #bar { display: none; }
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
   }
+
+  // ---------- 2026.11.16 Ver.4.0 追加：写真 ----------
+  // 写真本体は容量の大きい IndexedDB に保存し、記録（type:'photo'）には photoId だけを持たせる。
+  // 取り込み時に長辺1280px・JPEG画質0.7に縮小する（文字が読める程度）。
+  var PHOTO_DB = 'motoGymkhanaLog.photos';
+  var PHOTO_STORE = 'photos';
+  var PHOTO_MAX = 1280;
+  var PHOTO_QUALITY = 0.7;
+  var photoDbPromise = null;
+  var photoCache = {};
+  function photoDb() {
+    if (photoDbPromise) return photoDbPromise;
+    photoDbPromise = new Promise(function (resolve, reject) {
+      try {
+        if (!window.indexedDB) { reject(new Error('この環境では写真を保存できません')); return; }
+        var rq = indexedDB.open(PHOTO_DB, 1);
+        rq.onupgradeneeded = function () { rq.result.createObjectStore(PHOTO_STORE); };
+        rq.onsuccess = function () { resolve(rq.result); };
+        rq.onerror = function () { reject(rq.error || new Error('写真の保存領域を開けません')); };
+      } catch (e) { reject(e); }
+    });
+    return photoDbPromise;
+  }
+  function photoTx(mode, fn) {
+    return photoDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(PHOTO_STORE, mode);
+        var rq = fn(tx.objectStore(PHOTO_STORE));
+        tx.oncomplete = function () { resolve(rq ? rq.result : undefined); };
+        tx.onerror = function () { reject(tx.error); };
+        tx.onabort = function () { reject(tx.error || new Error('保存が中断されました')); };
+      });
+    });
+  }
+  function putPhoto(id, data) { return photoTx('readwrite', function (st) { return st.put(data, id); }); }
+  function getPhoto(id) { return photoTx('readonly', function (st) { return st.get(id); }); }
+  function delPhoto(id) { return photoTx('readwrite', function (st) { return st.delete(id); }); }
+
+  // 他の記録がまだ同じ写真を使っているか（別IDで残した記録が同じ写真を指す場合があるため）
+  function photoStillUsed(photoId, exceptEntryId) {
+    for (var i = 0; i < state.pages.length; i++) {
+      var list = state.pages[i].entries || [];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j].type === 'photo' && list[j].photoId === photoId && list[j].id !== exceptEntryId) return true;
+      }
+    }
+    return false;
+  }
+  function releasePhoto(e) {
+    if (!e || e.type !== 'photo' || !e.photoId) return;
+    if (photoStillUsed(e.photoId, e.id)) return;
+    delete photoCache[e.photoId];
+    delPhoto(e.photoId).catch(function () { /* 消せなくても記録の削除は続ける */ });
+  }
+
+  function shrinkImage(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var w = img.naturalWidth, h = img.naturalHeight;
+          var sc = Math.min(1, PHOTO_MAX / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * sc)), ch = Math.max(1, Math.round(h * sc));
+          var c = document.createElement('canvas');
+          c.width = cw; c.height = ch;
+          var g = c.getContext('2d');
+          g.fillStyle = '#ffffff';
+          g.fillRect(0, 0, cw, ch);
+          g.drawImage(img, 0, 0, cw, ch);
+          URL.revokeObjectURL(url);
+          resolve(c.toDataURL('image/jpeg', PHOTO_QUALITY));
+        } catch (err) { URL.revokeObjectURL(url); reject(err); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('画像を読み込めません')); };
+      img.src = url;
+    });
+  }
+
+  // 写真を1枚選ぶ（スマホではカメラ撮影／ライブラリから選択）。選んだら cb(記録) を呼ぶ
+  var photoCb = null;
+  function pickPhoto(cb) {
+    photoCb = cb;
+    $('photoFile').value = '';
+    $('photoFile').click();
+  }
+  $('photoFile').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    var cb = photoCb;
+    photoCb = null;
+    if (!f || !cb) return;
+    toast('写真を取り込み中…');
+    shrinkImage(f).then(function (data) {
+      var pid = 'ph' + uid();
+      return putPhoto(pid, data).then(function () {
+        photoCache[pid] = data;
+        toast('写真を追加しました');
+        cb({ id: uid(), type: 'photo', photoId: pid, text: '写真', practice: '', createdAt: Date.now(), updatedAt: null });
+      });
+    }).catch(function (err) {
+      toast('写真を保存できませんでした：' + ((err && err.message) || ''));
+    });
+  });
+
+  function loadPhotoInto(img, photoId, holder) {
+    function missing() {
+      var m = el('div', 'pmiss', '写真が見つかりません（この端末に保存されていません）');
+      if (img.parentNode) img.parentNode.replaceChild(m, img);
+    }
+    if (photoCache[photoId]) { img.src = photoCache[photoId]; return; }
+    getPhoto(photoId).then(function (data) {
+      if (data) { photoCache[photoId] = data; img.src = data; }
+      else missing();
+    }).catch(missing);
+  }
+
+  // 拡大表示（タップで 原寸／全体 の切り替え）
+  function openPhotoView(src) {
+    var v = $('photoView');
+    $('photoViewImg').classList.remove('full');
+    $('photoViewImg').src = src;
+    v.hidden = false;
+  }
+  function closePhotoView() {
+    $('photoView').hidden = true;
+    $('photoViewImg').removeAttribute('src');
+  }
+  $('photoViewImg').addEventListener('click', function () { this.classList.toggle('full'); });
+  $('photoViewClose').addEventListener('click', closePhotoView);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('photoView').hidden) closePhotoView();
+  });
+  // 下の入力欄のボタンも同じ（欄の高さが縮んでボタンがずれ、押せなくなるのを防ぐ）
+  $('entryForm').addEventListener('mousedown', function (ev) {
+    if (ev.target.closest && ev.target.closest('button')) ev.preventDefault();
+  });
+  // 下の入力欄の 📷：記録の流れの最後に追加する（キーボードは出さない）
+  $('photoBtn').addEventListener('click', function () {
+    pickPhoto(function (pe) {
+      var p = currentPage();
+      if (!p) return;
+      p.entries.push(pe);
+      save();
+      editing = null;
+      renderList();
+      main.scrollTop = main.scrollHeight;
+      setTimeout(function () { main.scrollTop = main.scrollHeight; }, 300);
+      setTimeout(function () { main.scrollTop = main.scrollHeight; }, 900);
+    });
+  });
 
   function sortedPages() {
     return state.pages.slice().sort(function (a, b) {
@@ -978,6 +1152,10 @@ body.editingRow #bar { display: none; }
       var ok = buttons.filter(function (b) { return b.submit; })[0];
       if (ok) ok.onClick(inp.value.trim(), pc.get());
     });
+    // 2026.11.16 Ver.4.0 追加：ボタンを押した瞬間に入力欄のフォーカスが外れて欄の高さが縮み、ボタンの位置がずれて押せなくなるのを防ぐ
+    form.addEventListener('mousedown', function (ev) {
+      if (ev.target.closest && ev.target.closest('button')) ev.preventDefault();
+    });
     form.appendChild(row);
     form.appendChild(pv);
     form.appendChild(pc.root);
@@ -1054,7 +1232,7 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 変更：挿入時も練習内容を付ける（前回の選択を引き継ぐ）
   // 2026.11.16 Ver.3.11 変更：above=true のときは、その行の上（先頭）に挿入する
   function buildInsertRow(p, e, above) {
-    return buildEditor('', (above ? '先頭に挿入：' : '挿入：') + '1/02/333 またはメモ', [
+    var insForm = buildEditor('', (above ? '先頭に挿入：' : '挿入：') + '1/02/333 またはメモ', [
       {
         label: '挿入', submit: true,
         onClick: function (raw, practice) {
@@ -1095,26 +1273,55 @@ body.editingRow #bar { display: none; }
         onClick: function () { editing = null; renderList(); }
       }
     ], state.lastPractice);
+    // 2026.11.16 Ver.4.0 追加：挿入欄にも 📷。選んだ写真を、この位置に挿入する
+    var pbtn = el('button', 'btn sub', '📷');
+    pbtn.type = 'button';
+    pbtn.setAttribute('aria-label', '写真を挿入');
+    pbtn.addEventListener('click', function () {
+      pickPhoto(function (pe) {
+        var idx = indexOfEntry(p, e.id);
+        if (idx < 0) return;
+        var keep = main.scrollTop;
+        p.entries.splice(above ? idx : idx + 1, 0, pe);
+        save();
+        editing = null;
+        renderList();
+        main.scrollTop = keep;
+      });
+    });
+    insForm.querySelector('.erow').insertBefore(pbtn, insForm.querySelector('textarea'));
+    return insForm;
   }
 
   // 2026.11.16 変更：タイム行に練習内容のタグを表示
   function buildRow(p, e, isBest) {
     var row = el('div', 'entry ' + e.type + (isBest ? ' best' : ''));
-    var body = el('div', 'body', e.text);
+    var body = el('div', 'body', e.type === 'photo' ? '' : e.text);
     if (isBest) body.appendChild(el('span', 'badge', 'BEST'));
     if (e.type === 'time' && e.practice) body.appendChild(el('span', 'ptag', e.practice));
+    // 2026.11.16 Ver.4.0 追加：写真の行（タップで拡大。文字の修正はなし）
+    if (e.type === 'photo') {
+      var img = el('img', 'pimg');
+      img.alt = '写真';
+      img.addEventListener('click', function () { if (img.src) openPhotoView(img.src); });
+      body.appendChild(img);
+      loadPhotoInto(img, e.photoId);
+    }
     var stamp = entryStamp(e);
     if (stamp) body.appendChild(el('span', 'stamp', stamp));
-    onDouble(body, function () {
-      editing = { id: e.id, mode: 'edit' };
-      renderList();
-    });
+    if (e.type !== 'photo') {
+      onDouble(body, function () {
+        editing = { id: e.id, mode: 'edit' };
+        renderList();
+      });
+    }
     var x = el('button', 'x', '✕');
     x.type = 'button';
     x.setAttribute('aria-label', '削除');
     x.addEventListener('click', function () {
-      if (!confirm('この行を削除しますか？\n' + e.text)) return;
+      if (!confirm('この行を削除しますか？\n' + (e.type === 'photo' ? '（写真）' : e.text))) return;
       p.entries = p.entries.filter(function (z) { return z.id !== e.id; });
+      releasePhoto(e);
       editing = null;
       save();
       renderList();
@@ -1342,6 +1549,8 @@ body.editingRow #bar { display: none; }
     if (!p) return;
     if (!confirm('このページを削除しますか？\n' + formatDate(p.date) + ' ' + placeText(p) + '\n（記録も全て消えます）')) return;
     state.pages = state.pages.filter(function (x) { return x.id !== p.id; });
+    // 2026.11.16 Ver.4.0 追加：このページの写真も消す（他で使っていないものだけ）
+    (p.entries || []).forEach(function (pe) { releasePhoto(pe); });
     state.current = null;
     // 同じ日付に別ノートが残っていれば、その日の最後のノートを表示する。
     save();
@@ -1580,15 +1789,32 @@ body.editingRow #bar { display: none; }
     $('menu').classList.toggle('open');
   });
 
+  // 2026.11.16 Ver.4.0 変更：写真もバックアップに入れる（photos に photoId → 画像データ で書き出す）
   $('exportBtn').addEventListener('click', function () {
-    var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'moto-gymkhana-log-' + todayStr().replace(/-/g, '') + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    var copy = JSON.parse(JSON.stringify(state));
+    var ids = {};
+    state.pages.forEach(function (pg) {
+      (pg.entries || []).forEach(function (pe) { if (pe.type === 'photo' && pe.photoId) ids[pe.photoId] = true; });
+    });
+    var keys = Object.keys(ids);
+    var missingCount = 0;
+    copy.photos = {};
+    Promise.all(keys.map(function (id) {
+      var got = photoCache[id] ? Promise.resolve(photoCache[id]) : getPhoto(id);
+      return got.then(function (d) { if (d) copy.photos[id] = d; else missingCount++; })
+        .catch(function () { missingCount++; });
+    })).then(function () {
+      var blob = new Blob([JSON.stringify(copy, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'moto-gymkhana-log-' + todayStr().replace(/-/g, '') + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      if (missingCount) toast('写真' + missingCount + '枚は端末に見つからず、バックアップに入っていません');
+      else if (keys.length) toast('写真' + keys.length + '枚を含めて書き出しました');
+    });
   });
 
   $('importBtn').addEventListener('click', function () { $('importFile').click(); });
@@ -1701,6 +1927,14 @@ body.editingRow #bar { display: none; }
         if (!confirm('読み込んだノートを現在のデータに追加・統合します。\n既存のノートは削除しません。よろしいですか？')) return;
         // 2026.11.16 追加：旧形式（Ver.2.5以前）のファイルは、読み込み時に新形式へ変換する
         migrateData(imported);
+        // 2026.11.16 Ver.4.0 追加：バックアップに入っている写真を、この端末に保存する
+        var importedPhotos = (imported.photos && typeof imported.photos === 'object') ? imported.photos : {};
+        Object.keys(importedPhotos).forEach(function (pid) {
+          var data = importedPhotos[pid];
+          if (typeof data !== 'string' || data.indexOf('data:image/') !== 0) return;
+          photoCache[pid] = data;
+          putPhoto(pid, data).catch(function () { toast('写真の一部を保存できませんでした'); });
+        });
         var result = mergeImportedData(imported);
         // 読み込み後は、追加されたノートがあればその日付を表示する。
         if (imported.current) {
