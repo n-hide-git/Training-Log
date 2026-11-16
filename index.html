@@ -1,3 +1,4 @@
+<!-- 2026.11.16 Ver.3.15 気温などの入力欄を触ってキーボードが出ても、その欄が見えるよう自動スクロール -->
 <!-- 2026.11.16 Ver.3.14 ノートがない日も余白を設けてバージョンを表示 -->
 <!-- 2026.11.16 Ver.3.13 挿入後のスクロール位置を保持 -->
 <!-- 2026.11.16 Ver.3.12 挿入ボタン押下後は編集・挿入モードを終了 -->
@@ -298,6 +299,8 @@ body.editingRow #bar { display: none; }
   padding: calc(16px + env(safe-area-inset-top)) 12px 24px;
 }
 #overlay.open { display: block; }
+/* 2026.11.16 Ver.3.15 追加：キーボードが出ている間は、フォームの下に余白を足して、気温などの欄をキーボードより上までスクロールできるようにする */
+#overlay.kb { padding-bottom: 60vh; }
 #newForm { max-width: 480px; margin: 0 auto; padding: 16px; background: #EAF7ED; border: 1px solid #D2E6D7; border-radius: 12px; }
 #newForm h2 { margin: 0 0 12px; font-size: 18px; }
 #newForm label, #newForm .lab { display: block; margin-top: 12px; font-size: 14px; color: var(--sub); }
@@ -380,10 +383,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.3.14  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.3.15  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.14  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.15  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -1163,9 +1166,46 @@ body.editingRow #bar { display: none; }
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', function () {
       document.body.style.height = window.visualViewport.height + 'px';
+      // 2026.11.16 Ver.3.15 追加：新規・設定修正フォームも、キーボードの上の見える範囲に収める
+      fitOverlay();
       window.scrollTo(0, 0);
     });
+    window.visualViewport.addEventListener('scroll', fitOverlay);
   }
+  // 2026.11.16 Ver.3.15 追加：フォーム（#overlay）の高さを、キーボードを除いた見える範囲に合わせる
+  function fitOverlay() {
+    var ov = $('overlay');
+    if (!window.visualViewport || !ov.classList.contains('open')) {
+      ov.style.height = '';
+      ov.style.top = '';
+      return;
+    }
+    ov.style.top = window.visualViewport.offsetTop + 'px';
+    ov.style.height = window.visualViewport.height + 'px';
+    ov.style.bottom = 'auto';
+  }
+  // 入力欄を触ったら、キーボードが立ち上がるのを待って、その欄が見える位置までスクロールする
+  function revealField(f) {
+    if (!f || !document.body.contains(f)) return;
+    var ov = $('overlay');
+    var r = f.getBoundingClientRect();
+    var o = ov.getBoundingClientRect();
+    ov.scrollTop += (r.top - o.top) - Math.round(ov.clientHeight * 0.25);
+  }
+  $('newForm').addEventListener('focusin', function (e) {
+    var t = e.target;
+    if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'SELECT')) return;
+    $('overlay').classList.add('kb');
+    fitOverlay();
+    setTimeout(function () { fitOverlay(); revealField(t); }, 120);
+    setTimeout(function () { fitOverlay(); revealField(t); }, 400);
+  });
+  $('newForm').addEventListener('focusout', function () {
+    setTimeout(function () {
+      var a = document.activeElement;
+      if (!a || !$('newForm').contains(a)) $('overlay').classList.remove('kb');
+    }, 200);
+  });
 
   function renderAll(scrollToBottom) {
     editing = null;
@@ -1393,8 +1433,13 @@ body.editingRow #bar { display: none; }
     }
     updateDatePreview();
     $('overlay').classList.add('open');
+    fitOverlay();
   }
-  function closeForm() { $('overlay').classList.remove('open'); }
+  function closeForm() {
+    $('overlay').classList.remove('open');
+    $('overlay').classList.remove('kb');
+    fitOverlay();
+  }
 
   $('newBtn').addEventListener('click', function () { openForm(null); });
   $('newCancel').addEventListener('click', closeForm);
