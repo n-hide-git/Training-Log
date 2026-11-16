@@ -1,3 +1,4 @@
+<!-- 2026.11.16 Ver.3.10 日付欄をタップ→カレンダーの日付を触ると入る／修正・挿入中は下の入力セットを隠す -->
 <!-- 2026.11.16 Ver.3.9 日付を直接入力できるように（カレンダーは右のボタンから）／場所を一覧から選んだらキーボードを出さない -->
 <!-- 2026.11.16 Ver.3.8 新規登録後にキーボードを出さない／修正欄を開いたら画面の上へスクロール -->
 <!-- 2026.11.16 Ver.3.7 タイム・コメントを追加したらキーボードを自動で閉じる -->
@@ -213,6 +214,8 @@ button { cursor: pointer; }
 .epreview { min-height: 18px; padding: 2px 4px 0; font-size: 14px; color: var(--gold-text); }
 /* 2026.11.16 Ver.3.8 追加：修正・挿入の欄を開いている間は、下に余白を足して、欄を画面の上までスクロールできるようにする */
 #list.editing { padding-bottom: 60vh; }
+/* 2026.11.16 Ver.3.10 追加：修正・挿入中は下の入力セットを隠す */
+body.editingRow #bar { display: none; }
 /* 2026.11.16 Ver.3.4 追加：あり得ないタイムの警告表示（赤） */
 #preview.warn, .epreview.warn, #entrySet #preview.warn { color: var(--danger); font-weight: 700; }
 .ebtns { display: flex; gap: 6px; margin-top: 6px; }
@@ -318,8 +321,8 @@ button { cursor: pointer; }
 #newForm .combo { display: flex; gap: 6px; }
 #newForm .combo input { flex: 1; min-width: 0; }
 #newForm .combo select { width: 110px; flex: none; }
-/* 2026.11.16 Ver.3.9 追加：日付の直接入力欄・カレンダーボタン・入力内容の確認表示 */
-#newForm .combo button { width: 110px; flex: none; height: 44px; margin-top: 4px; padding: 0 6px; font-size: 14px; background: #F5FBF6; border-color: #D2E6D7; }
+/* 2026.11.16 Ver.3.10 変更：日付欄はタップでカレンダーを開く欄。選んだ日付の確認表示 */
+#newForm #fDate { cursor: pointer; }
 #fDatePreview { min-height: 20px; padding: 3px 4px 0; font-size: 14px; font-weight: 600; color: var(--green-dark); }
 #fDatePreview.warn { color: var(--danger); }
 #newBtns { display: flex; gap: 8px; margin-top: 18px; }
@@ -370,7 +373,7 @@ button { cursor: pointer; }
   <div id="empty">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.9  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.10  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -405,12 +408,9 @@ button { cursor: pointer; }
     <!-- 2026.11.16 変更：練習内容の欄を削除（タイム行ごとに記入するため） -->
     <h2 id="formTitle">新しいページ（日付・場所）</h2>
 
-    <!-- 2026.11.16 Ver.3.9 変更：日付は直接入力（数字だけでも可）、または右のカレンダーから選べる -->
-    <div class="lab">日付（直接入力、または右のカレンダーから選択）<span class="req">必須</span></div>
-    <div class="combo">
-      <input id="fDate" type="text" inputmode="numeric" autocomplete="off" required placeholder="必須：例 20261116">
-      <button id="fDateCal" class="btn sub" type="button">カレンダー</button>
-    </div>
+    <!-- 2026.11.16 Ver.3.10 変更：日付欄をタップするとカレンダーが開き、触った日付がそのまま入る（キーボードは出さない） -->
+    <div class="lab">日付（タップしてカレンダーから選択）<span class="req">必須</span></div>
+    <input id="fDate" type="text" readonly required placeholder="必須：タップして日付を選ぶ">
     <div id="fDatePreview"></div>
 
     <!-- 2026.11.13 変更：場所は直接入力、または右の「選択」から選べる -->
@@ -1110,6 +1110,8 @@ button { cursor: pointer; }
     // 2026.11.16 Ver.3.8 変更：修正・挿入の欄を開いたら、その欄が画面の上に来るようスクロールする（ボタンの見切れ対策）
     var ed = listEl.querySelector('.editor');
     listEl.classList.toggle('editing', !!ed);
+    // 2026.11.16 Ver.3.10 追加：修正・挿入の欄を開いている間は、下の「何の練習？＋タイム」入力セットを隠す
+    document.body.classList.toggle('editingRow', !!ed);
     if (ed) {
       var ei = ed.querySelector('textarea');
       try { ei.focus({ preventScroll: true }); } catch (err) { ei.focus(); }
@@ -1330,14 +1332,8 @@ button { cursor: pointer; }
       pv.classList.remove('warn');
     }
   }
-  $('fDate').addEventListener('input', updateDatePreview);
-  $('fDate').addEventListener('blur', function () {
-    var s = parseDateInput($('fDate').value);
-    if (s) $('fDate').value = s;
-    updateDatePreview();
-  });
-  $('fDateCal').addEventListener('click', function () {
-    $('fDate').blur();
+  // 2026.11.16 Ver.3.10 変更：日付欄をタップ → カレンダーが開き、触った日付が欄に入る
+  $('fDate').addEventListener('click', function () {
     var cur = parseDateInput($('fDate').value) || selectedDate || todayStr();
     var p = cur.split('-');
     calendarMonth = new Date(Number(p[0]), Number(p[1]) - 1, 1);
