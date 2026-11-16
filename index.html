@@ -1,3 +1,4 @@
+<!-- 2026.11.16 Ver.3.9 日付を直接入力できるように（カレンダーは右のボタンから）／場所を一覧から選んだらキーボードを出さない -->
 <!-- 2026.11.16 Ver.3.8 新規登録後にキーボードを出さない／修正欄を開いたら画面の上へスクロール -->
 <!-- 2026.11.16 Ver.3.7 タイム・コメントを追加したらキーボードを自動で閉じる -->
 <!-- 2026.11.16 Ver.3.6 コメント（メモ）の文字を大きく・濃くして読みやすく -->
@@ -317,6 +318,10 @@ button { cursor: pointer; }
 #newForm .combo { display: flex; gap: 6px; }
 #newForm .combo input { flex: 1; min-width: 0; }
 #newForm .combo select { width: 110px; flex: none; }
+/* 2026.11.16 Ver.3.9 追加：日付の直接入力欄・カレンダーボタン・入力内容の確認表示 */
+#newForm .combo button { width: 110px; flex: none; height: 44px; margin-top: 4px; padding: 0 6px; font-size: 14px; background: #F5FBF6; border-color: #D2E6D7; }
+#fDatePreview { min-height: 20px; padding: 3px 4px 0; font-size: 14px; font-weight: 600; color: var(--green-dark); }
+#fDatePreview.warn { color: var(--danger); }
 #newBtns { display: flex; gap: 8px; margin-top: 18px; }
 #newBtns .btn { flex: 1; }
 
@@ -365,7 +370,7 @@ button { cursor: pointer; }
   <div id="empty">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.8  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.9  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -400,9 +405,13 @@ button { cursor: pointer; }
     <!-- 2026.11.16 変更：練習内容の欄を削除（タイム行ごとに記入するため） -->
     <h2 id="formTitle">新しいページ（日付・場所）</h2>
 
-    <label>日付<span class="req">必須</span>
-      <input id="fDate" type="date" required>
-    </label>
+    <!-- 2026.11.16 Ver.3.9 変更：日付は直接入力（数字だけでも可）、または右のカレンダーから選べる -->
+    <div class="lab">日付（直接入力、または右のカレンダーから選択）<span class="req">必須</span></div>
+    <div class="combo">
+      <input id="fDate" type="text" inputmode="numeric" autocomplete="off" required placeholder="必須：例 20261116">
+      <button id="fDateCal" class="btn sub" type="button">カレンダー</button>
+    </div>
+    <div id="fDatePreview"></div>
 
     <!-- 2026.11.13 変更：場所は直接入力、または右の「選択」から選べる -->
     <div class="lab">場所（直接入力、または右から選択）</div>
@@ -1156,12 +1165,26 @@ button { cursor: pointer; }
     return new Date(Number(p[0]), Number(p[1]) - 1, 1);
   })();
 
+  // 2026.11.16 Ver.3.9 追加：null＝表示する日付を選ぶ／関数＝フォームの日付欄に入れる
+  var calendarTarget = null;
+  // カレンダー上で「選択中」として枠を付ける日付
+  function calendarMark() {
+    return calendarTarget ? parseDateInput($('fDate').value) : selectedDate;
+  }
+
   function closeCalendar() {
+    calendarTarget = null;
     $('calendarOverlay').classList.remove('open');
     $('calendarOverlay').setAttribute('aria-hidden', 'true');
   }
 
   function chooseCalendarDate(date) {
+    if (calendarTarget) {
+      var cb = calendarTarget;
+      closeCalendar();
+      cb(date);
+      return;
+    }
     selectedDate = date;
     state.selectedDate = selectedDate;
     state.current = null;
@@ -1195,7 +1218,7 @@ button { cursor: pointer; }
       var count = counts[date] || 0;
       var cls = 'cal-day';
       if (count) cls += ' has-notes';
-      if (date === selectedDate) cls += ' selected';
+      if (date === calendarMark()) cls += ' selected';
       if (date === todayStr()) cls += ' today';
       var b = el('button', cls, String(d));
       b.type = 'button';
@@ -1209,6 +1232,7 @@ button { cursor: pointer; }
   }
 
   $('dateBtn').addEventListener('click', function () {
+    calendarTarget = null;
     var p = (selectedDate || todayStr()).split('-');
     calendarMonth = new Date(Number(p[0]), Number(p[1]) - 1, 1);
     renderCalendar();
@@ -1259,6 +1283,7 @@ button { cursor: pointer; }
   fillOptions($('fPlacePick'), PLACES);
   fillOptions($('fWeather'), WEATHERS);
 
+  // 2026.11.16 Ver.3.9 変更：一覧から選んだときはキーボードを出さない（「その他」だけ、手入力のため入力欄にカーソルを置く）
   $('fPlacePick').addEventListener('change', function () {
     var v = $('fPlacePick').value;
     if (v === 'その他') {
@@ -1267,15 +1292,62 @@ button { cursor: pointer; }
       $('fPlace').value = v;
     }
     $('fPlacePick').selectedIndex = 0;
-    $('fPlace').focus();
+    if (v === 'その他') {
+      $('fPlace').focus();
+    } else {
+      $('fPlacePick').blur();
+    }
   });
 
   // page が null なら新規作成、ページを渡すとその設定の修正
-  // 2026.11.13 変更：日付欄はどこをクリック（タップ）してもカレンダーが開く
-  $('fDate').addEventListener('click', function () {
-    try {
-      if (this.showPicker) this.showPicker();
-    } catch (err) { /* 開けない環境では標準の動作のまま */ }
+  // 2026.11.16 Ver.3.9 変更：日付欄は直接入力に変更（旧：タップするとカレンダーが開く）。カレンダーは右のボタンから開く
+  // 20261116 / 2026-11-16 / 2026/11/16 / 2026年11月16日（全角も可）を 2026-11-16 に直す。日付として成り立たなければ空文字
+  function parseDateInput(raw) {
+    var v = String(raw || '').trim()
+      .replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+      .replace(/[／]/g, '/')
+      .replace(/[－−ー]/g, '-');
+    var m = /^(\d{4})[-\/.年](\d{1,2})[-\/.月](\d{1,2})日?$/.exec(v) || /^(\d{4})(\d{2})(\d{2})$/.exec(v);
+    if (!m) return '';
+    var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    var dt = new Date(y, mo - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return '';
+    return y + '-' + pad2(mo) + '-' + pad2(d);
+  }
+  // 入力した日付の確認表示（例：→ 2026年11月16日（月））
+  function updateDatePreview() {
+    var raw = $('fDate').value.trim();
+    var s = parseDateInput(raw);
+    var pv = $('fDatePreview');
+    if (s) {
+      pv.textContent = '→ ' + formatDate(s);
+      pv.classList.remove('warn');
+    } else if (raw) {
+      pv.textContent = '⚠ 日付の形が違います（例：20261116）';
+      pv.classList.add('warn');
+    } else {
+      pv.textContent = '';
+      pv.classList.remove('warn');
+    }
+  }
+  $('fDate').addEventListener('input', updateDatePreview);
+  $('fDate').addEventListener('blur', function () {
+    var s = parseDateInput($('fDate').value);
+    if (s) $('fDate').value = s;
+    updateDatePreview();
+  });
+  $('fDateCal').addEventListener('click', function () {
+    $('fDate').blur();
+    var cur = parseDateInput($('fDate').value) || selectedDate || todayStr();
+    var p = cur.split('-');
+    calendarMonth = new Date(Number(p[0]), Number(p[1]) - 1, 1);
+    calendarTarget = function (date) {
+      $('fDate').value = date;
+      updateDatePreview();
+    };
+    renderCalendar();
+    $('calendarOverlay').classList.add('open');
+    $('calendarOverlay').setAttribute('aria-hidden', 'false');
   });
 
   // 2026.11.16 変更：練習内容の欄を削除
@@ -1292,6 +1364,7 @@ button { cursor: pointer; }
     } else {
       $('fDate').value = selectedDate || todayStr();
     }
+    updateDatePreview();
     $('overlay').classList.add('open');
   }
   function closeForm() { $('overlay').classList.remove('open'); }
@@ -1307,7 +1380,12 @@ button { cursor: pointer; }
   // 2026.11.16 変更：日付＋場所が同じページは作らない（新規なら既存ページを開く／修正なら止める）
   $('newForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    var date = $('fDate').value;
+    // 2026.11.16 Ver.3.9 変更：直接入力された日付を読み取る（成り立たない日付は登録しない）
+    var date = parseDateInput($('fDate').value);
+    if (!date) {
+      toast('日付の形が違います（例：20261116）');
+      return;
+    }
     var place = $('fPlace').value.trim();
     var weather = $('fWeather').value;
     var temp = $('fTemp').value.trim();
