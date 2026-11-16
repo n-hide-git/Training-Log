@@ -1,4 +1,6 @@
-<!-- 2026.11.16 Ver.3.11 コメントの文字を深緑に／一番上の行に「この上に挿入」を追加 -->
+<!-- 2026.11.16 Ver.3.14 ノートがない日も余白を設けてバージョンを表示 -->
+<!-- 2026.11.16 Ver.3.13 挿入後のスクロール位置を保持 -->
+<!-- 2026.11.16 Ver.3.12 挿入ボタン押下後は編集・挿入モードを終了 -->
 <!-- 2026.11.16 Ver.3.10 日付欄をタップ→カレンダーの日付を触ると入る／修正・挿入中は下の入力セットを隠す -->
 <!-- 2026.11.16 Ver.3.9 日付を直接入力できるように（カレンダーは右のボタンから）／場所を一覧から選んだらキーボードを出さない -->
 <!-- 2026.11.16 Ver.3.8 新規登録後にキーボードを出さない／修正欄を開いたら画面の上へスクロール -->
@@ -167,7 +169,10 @@ button { cursor: pointer; }
 #infoBtns .btn { height: 34px; font-size: 13px; padding: 0 12px; }
 #infoHint { margin-top: 10px; font-size: 12px; color: var(--sub); }
 #infoDate, #infoPractice, #infoChips { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
-#empty { padding: 40px 16px; text-align: center; color: var(--sub); line-height: 1.8; }
+/* 2026.11.16 Ver.3.14 追加：ノートがない日もメッセージとVer表示の間に余白を設ける */
+#empty { padding: 32px 16px 22px; text-align: center; color: var(--sub); line-height: 1.8; }
+#emptyMessage { display: block; }
+#emptyVer { display: block; margin-top: 16px; text-align: right; color: #9aa6b5; font-size: 12px; line-height: 1.4; white-space: nowrap; }
 
 .entry {
   display: flex;
@@ -375,10 +380,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.3.14  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.11  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.3.14  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -916,7 +921,7 @@ body.editingRow #bar { display: none; }
     $('entryForm').querySelectorAll('textarea,button').forEach(function (e) { e.disabled = !p; });
     barPractice.setDisabled(!p);
     if (!p) {
-      empty.textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のページ（場所）を作成できます。';
+      $('emptyMessage').textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のページ（場所）を作成できます。';
       return;
     }
     $('infoDate').textContent = formatDate(p.date);
@@ -1063,12 +1068,16 @@ body.editingRow #bar { display: none; }
           ne.id = uid();
           ne.createdAt = Date.now();
           ne.updatedAt = null;
+          // 2026.11.16 Ver.3.13 変更：挿入前のスクロール位置を保持し、挿入内容をその場で確認できるようにする
+          var keepScrollTop = main.scrollTop;
           p.entries.splice(above ? idx : idx + 1, 0, ne);
           save();
           syncBarPractice();
-          // 続けて入れるときは、いま入れた行の下に入る
-          editing = { id: ne.id, mode: 'insert' };
+          // 挿入後は編集・挿入モードを終了して一覧表示に戻る
+          editing = null;
           renderList();
+          // 一覧再描画によるスクロール位置の変化を防ぐ
+          main.scrollTop = keepScrollTop;
         }
       },
       {
