@@ -1,3 +1,4 @@
+<!-- 2026.11.17 Ver.4.2 練習を選ばずにタイムを入れたとき、入力欄のすぐ上に赤字で「練習を選んでください」と表示（選択欄も赤枠）。お知らせ（トースト）がキーボードの裏に隠れないよう位置を調整 -->
 <!-- 2026.11.16 Ver.4.1 写真の行の右に「＋」を追加（この写真の下に挿入）。一番上の写真は「写真の上に挿入」も選べる -->
 <!-- 2026.11.16 Ver.4.0 写真を1枚ずつ記録の流れに追加（縮小して端末内に保存、バックアップにも含める） -->
 <!-- 2026.11.16 Ver.3.16 入力時に画面が勝手に拡大されて右が見切れる問題の対策 -->
@@ -265,6 +266,9 @@ body.editingRow #bar { display: none; }
   border-radius: 8px;
 }
 .pcontrol .pother[hidden] { display: none; }
+/* 2026.11.17 Ver.4.2 追加：練習内容が未選択のままタイムを入れたとき、選択欄を赤枠で知らせる */
+.pcontrol .psel.need, .pcontrol .pother.need,
+#entrySet .pcontrol .psel.need, #entrySet .pcontrol .pother.need { border: 3px solid var(--danger); background: #FFF1F1; }
 .editor .pcontrol { margin: 6px 0 0; }
 
 /* ===== 固定フッター（入力） ===== */
@@ -408,10 +412,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.1  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.2  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.1  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.2  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -515,6 +519,8 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 変更：練習内容の基本の選択肢。「その他」は別に末尾へ付ける（手入力した内容は次回から一覧に残る）
   var PRACTICES = ['8の字GP', '回転弁当', '牛丼弁当', 'アタックコース'];
   var OTHER = 'その他';
+  // 2026.11.17 Ver.4.2 追加：練習内容が未選択のときのメッセージ（下の入力欄・修正欄・挿入欄で共用）
+  var NEED_PRACTICE_MSG = '練習を選んでください（「▼ 何の練習？」から）';
   var WEATHERS = ['晴れ', '曇り', '雨'];
   var WD = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -637,6 +643,12 @@ body.editingRow #bar { display: none; }
   var toastTimer = null;
   function toast(msg) {
     var t = $('toast');
+    // 2026.11.17 Ver.4.2 追加：キーボードが出ている間は、その高さの分だけ上に表示する（iPhoneでキーボードの裏に隠れて見えなくなるのを防ぐ）
+    try {
+      var vv = window.visualViewport;
+      var kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+      t.style.bottom = kb > 0 ? (kb + 90) + 'px' : '';
+    } catch (err) { t.style.bottom = ''; }
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toastTimer);
@@ -900,22 +912,43 @@ body.editingRow #bar { display: none; }
       other.hidden = sel.value !== OTHER;
       other.value = '';
     }
+    // 2026.11.17 Ver.4.2 追加：未選択の赤枠を消す
+    function clearNeed() {
+      sel.classList.remove('need');
+      other.classList.remove('need');
+    }
     sel.addEventListener('change', function () {
       other.hidden = sel.value !== OTHER;
       if (!other.hidden) {
         other.value = '';
         other.focus();
       }
+      // 2026.11.17 Ver.4.2 追加：選び直したら赤枠を消し、呼び出し元（入力欄のメッセージ）にも知らせる
+      clearNeed();
+      if (typeof api.onChange === 'function') api.onChange();
+    });
+    // 2026.11.17 Ver.4.2 追加：「その他」に文字を入れたら赤枠を消す
+    other.addEventListener('input', function () {
+      clearNeed();
+      if (typeof api.onChange === 'function') api.onChange();
     });
     fill(initial);
-    return {
+    var api = {
       root: root,
       get: function () {
         return sel.value === OTHER ? other.value.trim() : sel.value;
       },
-      set: function (v) { fill(v); },
-      setDisabled: function (d) { sel.disabled = d; other.disabled = d; }
+      set: function (v) { fill(v); clearNeed(); },
+      setDisabled: function (d) { sel.disabled = d; other.disabled = d; },
+      // 2026.11.17 Ver.4.2 追加：練習内容が未選択のとき、赤枠で知らせる（「その他」を選んで未入力なら入力欄の方を赤枠に）
+      alertNeed: function () {
+        clearNeed();
+        if (sel.value === OTHER) other.classList.add('need');
+        else sel.classList.add('need');
+      },
+      onChange: null
     };
+    return api;
   }
 
   // ---------- タイム入力ルール ----------
@@ -1076,6 +1109,8 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 追加：下の入力欄の練習内容（前回の選択を state.lastPractice から引き継ぐ）
   var barPractice = buildPracticeControl(state.lastPractice);
   $('practiceHost').appendChild(barPractice.root);
+  // 2026.11.17 Ver.4.2 追加：練習を選び直したら、入力欄の上の赤いメッセージを消す（タイムの確認表示に戻す）
+  barPractice.onChange = function () { if (entry._rules) entry._rules.show(); };
   function syncBarPractice() { barPractice.set(state.lastPractice); }
 
   // ---------- 描画 ----------
@@ -1137,6 +1172,15 @@ body.editingRow #bar { display: none; }
     var pv = el('div', 'epreview');
     var rules = attachRules(inp, pv);
     var pc = buildPracticeControl(practiceInit || '');
+    // 2026.11.17 Ver.4.2 追加：ボタンの処理へ渡す、メッセージ表示用の道具（入力欄のすぐ下に赤字／練習の選択欄を赤枠）
+    var ui = {
+      warn: function (msg) { rules.warn(msg); },
+      needPractice: function () {
+        rules.warn(NEED_PRACTICE_MSG);
+        pc.alertNeed();
+      }
+    };
+    pc.onChange = function () { rules.show(); };
     rules.show();
     slash.addEventListener('click', rules.insertSlash);
     row.appendChild(slash);
@@ -1146,14 +1190,14 @@ body.editingRow #bar { display: none; }
       var bt = el('button', 'btn ' + (b.cls || '') + (b.submit ? ' primary' : ''), b.label);
       bt.type = b.submit ? 'submit' : 'button';
       if (!b.submit) {
-        bt.addEventListener('click', function () { b.onClick(inp.value.trim(), pc.get()); });
+        bt.addEventListener('click', function () { b.onClick(inp.value.trim(), pc.get(), ui); });
       }
       btns.appendChild(bt);
     });
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var ok = buttons.filter(function (b) { return b.submit; })[0];
-      if (ok) ok.onClick(inp.value.trim(), pc.get());
+      if (ok) ok.onClick(inp.value.trim(), pc.get(), ui);
     });
     // 2026.11.16 Ver.4.0 追加：ボタンを押した瞬間に入力欄のフォーカスが外れて欄の高さが縮み、ボタンの位置がずれて押せなくなるのを防ぐ
     form.addEventListener('mousedown', function (ev) {
@@ -1167,13 +1211,16 @@ body.editingRow #bar { display: none; }
   }
 
   // 2026.11.16 変更：練習内容（practice）を受け取り、タイムなら必須にする
-  function saveEdit(p, e, raw, practice) {
+  // 2026.11.17 Ver.4.2 変更：ui（メッセージ表示用）を受け取り、入力欄のすぐ下にも赤字で理由を出す
+  function saveEdit(p, e, raw, practice, ui) {
     if (!raw) {
+      if (ui) ui.warn('空欄は保存できません（削除は ✕ で）');
       toast('空欄は保存できません（削除は ✕ で）');
       return false;
     }
     var terr = timeError(raw);
     if (terr) {
+      if (ui) ui.warn(terr);
       toast(terr);
       return false;
     }
@@ -1182,7 +1229,8 @@ body.editingRow #bar { display: none; }
     var ne = buildEntry(raw);
     if (ne.type === 'time') {
       if (!practice) {
-        toast('何の練習のタイムか選んでください');
+        if (ui) ui.needPractice();
+        toast(NEED_PRACTICE_MSG);
         return false;
       }
       ne.practice = practice;
@@ -1201,14 +1249,14 @@ body.editingRow #bar { display: none; }
     var buttons = [
       {
         label: '保存', submit: true,
-        onClick: function (raw, practice) {
-          if (saveEdit(p, e, raw, practice)) { editing = null; renderList(); }
+        onClick: function (raw, practice, ui) {
+          if (saveEdit(p, e, raw, practice, ui)) { editing = null; renderList(); }
         }
       },
       {
         label: 'この下に挿入', cls: 'sub',
-        onClick: function (raw, practice) {
-          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice)) return;
+        onClick: function (raw, practice, ui) {
+          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice, ui)) return;
           editing = { id: e.id, mode: 'insert' };
           renderList();
         }
@@ -1222,8 +1270,8 @@ body.editingRow #bar { display: none; }
     if (indexOfEntry(p, e.id) === 0) {
       buttons.splice(1, 0, {
         label: 'この上に挿入', cls: 'sub',
-        onClick: function (raw, practice) {
-          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice)) return;
+        onClick: function (raw, practice, ui) {
+          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice, ui)) return;
           editing = { id: e.id, mode: 'insertAbove' };
           renderList();
         }
@@ -1238,10 +1286,12 @@ body.editingRow #bar { display: none; }
     var insForm = buildEditor('', (above ? '先頭に挿入：' : '挿入：') + '1/02/333 またはメモ', [
       {
         label: '挿入', submit: true,
-        onClick: function (raw, practice) {
+        onClick: function (raw, practice, ui) {
           if (!raw) return;
           var terr = timeError(raw);
           if (terr) {
+            // 2026.11.17 Ver.4.2 追加：入力欄のすぐ下にも赤字で理由を出す
+            if (ui) ui.warn(terr);
             toast(terr);
             return;
           }
@@ -1250,7 +1300,9 @@ body.editingRow #bar { display: none; }
           var ne = buildEntry(raw);
           if (ne.type === 'time') {
             if (!practice) {
-              toast('何の練習のタイムか選んでください');
+              // 2026.11.17 Ver.4.2 変更：入力欄のすぐ下に赤字で表示し、練習の選択欄を赤枠にする
+              if (ui) ui.needPractice();
+              toast(NEED_PRACTICE_MSG);
               return;
             }
             ne.practice = practice;
@@ -1780,7 +1832,10 @@ body.editingRow #bar { display: none; }
     if (ne.type === 'time') {
       var practice = barPractice.get();
       if (!practice) {
-        toast('何の練習のタイムか選んでください');
+        // 2026.11.17 Ver.4.2 変更：入力欄のすぐ上に赤字で表示し、練習の選択欄を赤枠にする（トーストはキーボードの裏に隠れることがあるため）
+        rules.warn(NEED_PRACTICE_MSG);
+        barPractice.alertNeed();
+        toast(NEED_PRACTICE_MSG);
         return;
       }
       ne.practice = practice;
