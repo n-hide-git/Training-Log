@@ -1,3 +1,4 @@
+<!-- 2026.11.17 Ver.4.8 キーボードを文字のキーボードに戻す（Ver.4.7 の数字キーボードは、iPhoneで日本語に切り替えられずメモが書けなかったため）。sw.js.js を sw.js に改名（圏外対応が読み込めていなかった） -->
 <!-- 2026.11.17 Ver.4.7 修正・挿入欄の「／」ボタンを非表示に。iPhoneではタイム入力欄のキーボードを数字の面から始める（メモの修正は文字のキーボード） -->
 <!-- 2026.11.17 Ver.4.6 圏外対応の状態を、バージョン表示の横にいつも表示（圏外OK／圏外OK・保存版／圏外×） -->
 <!-- 2026.11.17 Ver.4.5 圏外・電波が弱い場所でも起動できるように（sw.js を追加。電波があれば最新版、なければ端末に保存した版で起動） -->
@@ -502,10 +503,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.7  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.8  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.7  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.8  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -617,7 +618,10 @@ body.editingRow #bar { display: none; }
   // Android などでは numeric にすると数字だけのキーボードになり、メモが書けなくなるため、これまでどおり text のままにする。
   var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  var TIME_INPUTMODE = IS_IOS ? 'numeric' : 'text';
+  // 2026.11.17 Ver.4.8 変更：実機（iPhone）で確認した結果、inputmode="numeric" は数字だけのテンキーになり、
+  // 日本語へ切り替えられずメモが書けなかった。そのため、すべての端末で文字のキーボード（text）に戻す。
+  // （旧：var TIME_INPUTMODE = IS_IOS ? 'numeric' : 'text';）
+  var TIME_INPUTMODE = 'text';
   var WEATHERS = ['晴れ', '曇り', '雨'];
   var WD = ['日', '月', '火', '水', '木', '金', '土'];
 
