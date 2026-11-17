@@ -1,3 +1,4 @@
+<!-- 2026.11.17 Ver.4.7 修正・挿入欄の「／」ボタンを非表示に。iPhoneではタイム入力欄のキーボードを数字の面から始める（メモの修正は文字のキーボード） -->
 <!-- 2026.11.17 Ver.4.6 圏外対応の状態を、バージョン表示の横にいつも表示（圏外OK／圏外OK・保存版／圏外×） -->
 <!-- 2026.11.17 Ver.4.5 圏外・電波が弱い場所でも起動できるように（sw.js を追加。電波があれば最新版、なければ端末に保存した版で起動） -->
 <!-- 2026.11.17 Ver.4.4 場所の選択肢と順番を変更（キョウセイ２輪／パイロンパーク／きそれん！／キョウセイ４輪／にじれん！／その他） -->
@@ -501,10 +502,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.6  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.7  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.6  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.7  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -611,6 +612,12 @@ body.editingRow #bar { display: none; }
   var OTHER = 'その他';
   // 2026.11.17 Ver.4.2 追加：練習内容が未選択のときのメッセージ（下の入力欄・修正欄・挿入欄で共用）
   var NEED_PRACTICE_MSG = '練習を選んでください（「▼ 何の練習？」から）';
+  // 2026.11.17 Ver.4.7 追加：タイム入力欄で最初に出すキーボードの種類
+  // iPhone / iPad では inputmode="numeric" にすると、数字と記号（「/」を含む）の面から始まり、文字のキーボードへも切り替えられる。
+  // Android などでは numeric にすると数字だけのキーボードになり、メモが書けなくなるため、これまでどおり text のままにする。
+  var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var TIME_INPUTMODE = IS_IOS ? 'numeric' : 'text';
   var WEATHERS = ['晴れ', '曇り', '雨'];
   var WD = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -1251,7 +1258,8 @@ body.editingRow #bar { display: none; }
   // 2026.11.13 変更：修正・挿入用のエディタ行
   // 2026.11.16 変更：練習内容の選択を追加。onClick(入力値, 練習内容)
   // buttons: [{label, cls, submit, onClick(入力値, 練習内容)}]
-  function buildEditor(initial, placeholder, buttons, practiceInit) {
+  // 2026.11.17 Ver.4.7 変更：inputMode（キーボードの種類）を受け取れるようにした。省略時はタイム用（TIME_INPUTMODE）
+  function buildEditor(initial, placeholder, buttons, practiceInit, inputMode) {
     var form = el('form', 'editor');
     form.autocomplete = 'off';
     var row = el('div', 'erow');
@@ -1259,6 +1267,8 @@ body.editingRow #bar { display: none; }
     slash.type = 'button';
     var inp = el('textarea');
     inp.rows = 1;
+    // 2026.11.17 Ver.4.7 追加：タイムの修正・挿入は数字のキーボードから始める（メモの修正は文字のキーボード）
+    inp.setAttribute('inputmode', inputMode || TIME_INPUTMODE);
     inp.value = initial;
     inp.placeholder = placeholder;
     var pv = el('div', 'epreview');
@@ -1275,7 +1285,7 @@ body.editingRow #bar { display: none; }
     pc.onChange = function () { rules.show(); };
     rules.show();
     slash.addEventListener('click', rules.insertSlash);
-    row.appendChild(slash);
+    // 2026.11.17 Ver.4.7 変更：修正・挿入欄の「／」ボタンは使わないため表示しない（以前は row.appendChild(slash) で入力欄の左に出していた）
     row.appendChild(inp);
     var btns = el('div', 'ebtns' + (buttons.length > 3 ? ' four' : ''));
     buttons.forEach(function (b) {
@@ -1369,7 +1379,8 @@ body.editingRow #bar { display: none; }
         }
       });
     }
-    return buildEditor(orig, '1/02/333 またはメモ', buttons, origPractice);
+    // 2026.11.17 Ver.4.7 変更：メモの行を修正するときは文字のキーボード、タイムの行は数字のキーボードから始める
+    return buildEditor(orig, '1/02/333 またはメモ', buttons, origPractice, e.type === 'memo' ? 'text' : TIME_INPUTMODE);
   }
 
   // 2026.11.16 変更：挿入時も練習内容を付ける（前回の選択を引き継ぐ）
@@ -1901,6 +1912,8 @@ body.editingRow #bar { display: none; }
 
   // ---------- 下部のタイム・メモ入力 ----------
   var rules = attachRules(entry, preview);
+  // 2026.11.17 Ver.4.7 追加：下の入力欄は、数字のキーボードから始める（日本語へは自分で切り替える）
+  entry.setAttribute('inputmode', TIME_INPUTMODE);
 
   $('slashBtn').addEventListener('click', rules.insertSlash);
 
