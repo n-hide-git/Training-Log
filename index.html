@@ -1,3 +1,4 @@
+<!-- 2026.11.17 Ver.4.3 配色を「タイミングモニター」に変更（黒・白・灰色を基本に、赤＝押す場所、金＝BEST）。配置と機能は変更なし -->
 <!-- 2026.11.17 Ver.4.2 練習を選ばずにタイムを入れたとき、入力欄のすぐ上に赤字で「練習を選んでください」と表示（選択欄も赤枠）。お知らせ（トースト）がキーボードの裏に隠れないよう位置を調整 -->
 <!-- 2026.11.16 Ver.4.1 写真の行の右に「＋」を追加（この写真の下に挿入）。一番上の写真は「写真の上に挿入」も選べる -->
 <!-- 2026.11.16 Ver.4.0 写真を1枚ずつ記録の流れに追加（縮小して端末内に保存、バックアップにも含める） -->
@@ -388,6 +389,91 @@ body.editingRow #bar { display: none; }
   z-index: 40;
 }
 #toast.show { opacity: 1; }
+
+/* ===================================================================== */
+/* 2026.11.17 Ver.4.3 追加：カラーテーマ「タイミングモニター」              */
+/* 考え方：黒（カーボン）・白・灰色を基本に、色は2か所だけ。                */
+/*   赤 ＝ 押す場所（＋新規・追加・保存・登録）                            */
+/*   金 ＝ BEST（従来どおり）                                              */
+/* 上の従来の配色は消さずに残し、このブロックで上書きしている。             */
+/* 元の配色に戻すときは、このブロックを丸ごと外せばよい。                   */
+/* ===================================================================== */
+:root {
+  --bg: #F3F4F6;
+  --panel: #ECEEF1;
+  --line: #DDE1E6;
+  --text: #15181D;
+  --sub: #5B6470;
+  --accent: #D5202A;
+  --accent-dark: #B01922;
+  --green: #15181D;
+  --green-dark: #2B323B;
+  --gold: #e9b949;
+  --gold-text: #80601a;
+  --danger: #B3261E;
+  --carbon: #15181D;
+  --carbon-2: #2B323B;
+  --field: #F3F4F6;
+  --field-line: #C9CED5;
+}
+/* ヘッダー：カーボンの帯 */
+#top { background: var(--carbon); border-bottom: 1px solid var(--carbon); box-shadow: none; }
+#pageSel { background: #FFFFFF; border-color: #FFFFFF; color: var(--carbon); font-weight: 600; }
+#top .btn.sub { background: var(--carbon-2); border-color: #3A424C; color: #FFFFFF; }
+/* ボタン */
+.btn { box-shadow: 0 2px 5px rgba(21, 24, 29, .14); }
+.btn.sub { background: #FFFFFF; border: 1px solid var(--line); color: var(--text); box-shadow: none; }
+.btn.danger { background: #FFFFFF; border: 1px solid #E5C2C0; color: var(--danger); }
+/* 本文 */
+#main { background: var(--bg); }
+#info { box-shadow: none; }
+#infoPractice { color: var(--carbon); }
+.entry { border-bottom: 1px solid #E3E6EA; }
+/* 練習名タグ：無彩色（BESTの行だけ従来の金色のまま） */
+.entry .ptag { color: var(--carbon-2); background: #ECEEF1; border: 1px solid #D5DAE0; }
+.entry.best .ptag { color: var(--gold-text); background: rgba(233, 185, 73, 0.25); border-color: var(--gold); }
+/* メモ：灰色の線 */
+.entry.memo { background: #F7F8FA; border-left: 4px solid #9AA3AE; }
+.entry.memo .body { color: var(--carbon-2); }
+.x.plus { color: var(--carbon); }
+/* 修正・挿入の欄 */
+.editor { background: rgba(21, 24, 29, 0.05); }
+.editor textarea { background: #FFFFFF; border: 2px solid var(--carbon); }
+.epreview { color: var(--carbon); font-weight: 600; }
+.pcontrol .psel, .pcontrol .pother { background: #FFFFFF; border: 1px solid var(--field-line); }
+/* 下の入力セット：白地にカーボンの枠、追加ボタンだけ赤 */
+#bar { background: var(--panel); border-top: 1px solid var(--line); box-shadow: none; }
+#entry { background: var(--field); border: 1px solid var(--field-line); }
+#entrySet { background: #FFFFFF; border: 2px solid var(--carbon); box-shadow: 0 2px 8px rgba(21, 24, 29, .12); }
+#entrySetHead { color: var(--carbon); }
+#entrySetHead .step { background: var(--carbon); color: #FFFFFF; }
+#entrySetHead .arrow { color: var(--accent); }
+#entrySetHead .setnote { color: #7A838F; }
+#entrySet .pcontrol .psel, #entrySet .pcontrol .pother { border-color: var(--field-line); background: var(--field); color: var(--carbon); }
+#entrySet #entry { background: var(--field); border-color: var(--field-line); }
+#entrySet #entryForm .btn:not(.sub) { background: var(--accent); }
+#entrySet #entryForm .btn:not(.sub):hover { background: var(--accent-dark); }
+#entrySet #preview { color: var(--carbon); font-weight: 600; }
+/* 上の3行より後ろに書くと赤い警告が負けるため、警告の色をここで改めて指定する */
+#preview.warn, .epreview.warn, #entrySet #preview.warn { color: var(--danger); font-weight: 700; }
+.pcontrol .psel.need, .pcontrol .pother.need,
+#entrySet .pcontrol .psel.need, #entrySet .pcontrol .pother.need { border: 3px solid var(--danger); background: #FFF1F1; }
+/* 新規ページ・設定修正フォーム */
+#newForm { background: #FFFFFF; border: 1px solid var(--line); }
+#newForm input, #newForm select { background: var(--field); border: 1px solid var(--field-line); }
+#newForm #fTemp, #newForm #fWeather { background: var(--field); }
+/* 必須欄の太枠は赤だとエラーに見えるので、カーボンにする */
+#newForm input:required { border: 3px solid var(--carbon); }
+/* カレンダー：ノートがある日はカーボン、選択中は金の枠（従来どおり） */
+#calendarPanel { background: #FFFFFF; border: 1px solid var(--line); }
+.cal-nav { background: var(--field); border: 1px solid var(--line); }
+.cal-day { background: var(--field); }
+.cal-day.has-notes { background: var(--carbon); color: #FFFFFF; }
+#calendarLegend .sample { background: var(--carbon); }
+#calendarPanel .btn.sub { background: var(--field); border-color: var(--line); }
+/* 「今日」ボタン：文字が白のまま背景だけ淡色に上書きされていたので、背景もはっきり指定する */
+#calendarPanel #calToday { background: var(--carbon); border-color: var(--carbon); color: #FFFFFF; box-shadow: none; }
+#calendarPanel #calToday:hover { background: var(--carbon-2); }
 </style>
 </head>
 <body>
@@ -412,10 +498,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.2  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.3  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.2  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.3  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -647,7 +733,9 @@ body.editingRow #bar { display: none; }
     try {
       var vv = window.visualViewport;
       var kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
-      t.style.bottom = kb > 0 ? (kb + 90) + 'px' : '';
+      // 2026.11.17 Ver.4.3 変更：下の入力セットに重ならないよう、入力セットのすぐ上に出す（練習の選択欄をお知らせが隠していた）
+      var barH = $('bar') ? $('bar').offsetHeight : 0;
+      t.style.bottom = (kb + barH + 12) + 'px';
     } catch (err) { t.style.bottom = ''; }
     t.textContent = msg;
     t.classList.add('show');
