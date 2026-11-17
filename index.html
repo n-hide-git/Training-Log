@@ -1,3 +1,5 @@
+<!-- 2026.11.17 Ver.4.5 圏外・電波が弱い場所でも起動できるように（sw.js を追加。電波があれば最新版、なければ端末に保存した版で起動） -->
+<!-- 2026.11.17 Ver.4.4 場所の選択肢と順番を変更（キョウセイ２輪／パイロンパーク／きそれん！／キョウセイ４輪／にじれん！／その他） -->
 <!-- 2026.11.17 Ver.4.3 配色を「タイミングモニター」に変更（黒・白・灰色を基本に、赤＝押す場所、金＝BEST）。配置と機能は変更なし -->
 <!-- 2026.11.17 Ver.4.2 練習を選ばずにタイムを入れたとき、入力欄のすぐ上に赤字で「練習を選んでください」と表示（選択欄も赤枠）。お知らせ（トースト）がキーボードの裏に隠れないよう位置を調整 -->
 <!-- 2026.11.16 Ver.4.1 写真の行の右に「＋」を追加（この写真の下に挿入）。一番上の写真は「写真の上に挿入」も選べる -->
@@ -498,10 +500,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.3  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.5  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.3  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.5  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -601,7 +603,8 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 追加：保存データの形式番号（2 = Ver.3.0 の「日付×場所」形式）
   var SCHEMA = 2;
   // 2026.11.13 変更：場所にも「その他」を追加（選ぶと入力窓が空になり、手入力できる）
-  var PLACES = ['キョウセイ２輪', 'キョウセイ４輪', 'PPS', 'レインボー', 'その他'];
+  // 2026.11.17 Ver.4.4 変更：場所の選択肢と順番を変更（旧：キョウセイ２輪／キョウセイ４輪／PPS／レインボー／その他）。「その他」（手入力）は末尾に残す
+  var PLACES = ['キョウセイ２輪', 'パイロンパーク', 'きそれん！', 'キョウセイ４輪', 'にじれん！', 'その他'];
   // 2026.11.16 変更：練習内容の基本の選択肢。「その他」は別に末尾へ付ける（手入力した内容は次回から一覧に残る）
   var PRACTICES = ['8の字GP', '回転弁当', '牛丼弁当', 'アタックコース'];
   var OTHER = 'その他';
@@ -2139,6 +2142,26 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 追加：旧形式から変換した場合のお知らせ
   if (migratedNotice) toast('Ver.3.0の形式に変換しました（変換前のデータはバックアップ済み）');
   if (!state.pages.length) openForm(null);
+
+  // ---------- 2026.11.17 Ver.4.5 追加：圏外・電波が弱い場所でも起動できるようにする ----------
+  // 同じフォルダの sw.js が、このページを端末に保存する。
+  // 電波があれば最新版を取りに行き、なければ（または3秒待っても届かなければ）端末に保存した版で起動する。
+  // 記録（localStorage）と写真（IndexedDB）には触らない。
+  (function () {
+    try {
+      if (!('serviceWorker' in navigator)) return;
+      var host = location.hostname;
+      if (location.protocol !== 'https:' && host !== 'localhost' && host !== '127.0.0.1') return;
+      // 初めて端末に保存できたときだけ、お知らせを出す
+      var hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (hadController) return;
+        hadController = true;
+        toast('端末に保存しました。圏外でも開けます');
+      });
+      navigator.serviceWorker.register('./sw.js').catch(function () { /* 登録できなくても、これまでどおり使える */ });
+    } catch (e) { /* 対応していない環境では何もしない */ }
+  })();
 })();
 </script>
 </body>
