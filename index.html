@@ -1,3 +1,4 @@
+<!-- 2026.11.17 Ver.4.6 圏外対応の状態を、バージョン表示の横にいつも表示（圏外OK／圏外OK・保存版／圏外×） -->
 <!-- 2026.11.17 Ver.4.5 圏外・電波が弱い場所でも起動できるように（sw.js を追加。電波があれば最新版、なければ端末に保存した版で起動） -->
 <!-- 2026.11.17 Ver.4.4 場所の選択肢と順番を変更（キョウセイ２輪／パイロンパーク／きそれん！／キョウセイ４輪／にじれん！／その他） -->
 <!-- 2026.11.17 Ver.4.3 配色を「タイミングモニター」に変更（黒・白・灰色を基本に、赤＝押す場所、金＝BEST）。配置と機能は変更なし -->
@@ -500,10 +501,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.5  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.4.6  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.5  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.4.6  nakaZ</span></div>
     <div id="infoPractice"></div>
     <div class="chips" id="infoChips"></div>
     <div id="infoBtns">
@@ -2155,13 +2156,52 @@ body.editingRow #bar { display: none; }
       // 初めて端末に保存できたときだけ、お知らせを出す
       var hadController = !!navigator.serviceWorker.controller;
       navigator.serviceWorker.addEventListener('controllerchange', function () {
+        // 2026.11.17 Ver.4.6 追加：担当が決まったら、バージョン表示の横の状態も更新する
+        askOfflineState();
         if (hadController) return;
         hadController = true;
         toast('端末に保存しました。圏外でも開けます');
       });
-      navigator.serviceWorker.register('./sw.js').catch(function () { /* 登録できなくても、これまでどおり使える */ });
+      navigator.serviceWorker.register('./sw.js').catch(function () {
+        /* 登録できなくても、これまでどおり使える */
+        // 2026.11.17 Ver.4.6 追加：登録できなかったことをバージョン表示の横に出す
+        setOfflineState('圏外×');
+      });
+      // 2026.11.17 Ver.4.6 追加：準備ができたら状態を問い合わせる
+      navigator.serviceWorker.ready.then(function () { askOfflineState(); }).catch(function () {});
+      askOfflineState();
     } catch (e) { /* 対応していない環境では何もしない */ }
   })();
+
+  // ---------- 2026.11.17 Ver.4.6 追加：圏外対応の状態を、バージョン表示の横にいつも出す ----------
+  // 一度だけ2秒出るお知らせでは見逃すため、常に見える表示にした。
+  //   圏外OK        ＝ アプリ本体が端末に保存されている（圏外でも開ける）
+  //   圏外OK・保存版 ＝ 今回は、端末に保存した版で起動した（圏外、または電波が弱かった）
+  //   圏外×         ＝ この環境では圏外対応が使えない（通信があれば、これまでどおり使える）
+  //   表示なし       ＝ まだ準備中（初回は数秒かかる）
+  var verBase = { ver: $('ver').textContent, emptyVer: $('emptyVer').textContent };
+  function setOfflineState(text) {
+    try {
+      $('ver').textContent = verBase.ver + (text ? ' ・' + text : '');
+      $('emptyVer').textContent = verBase.emptyVer + (text ? ' ・' + text : '');
+    } catch (e) { /* 表示できなくても動作には影響しない */ }
+  }
+  function askOfflineState() {
+    try {
+      if (!('serviceWorker' in navigator)) { setOfflineState('圏外×'); return; }
+      var sw = navigator.serviceWorker.controller;
+      if (!sw || typeof MessageChannel === 'undefined') return;
+      var ch = new MessageChannel();
+      ch.port1.onmessage = function (ev) {
+        var d = ev.data || {};
+        if (d.type !== 'status') return;
+        if (!d.hasSaved) { setOfflineState(''); return; }
+        setOfflineState(d.source === 'saved' ? '圏外OK・保存版' : '圏外OK');
+      };
+      sw.postMessage({ type: 'status' }, [ch.port2]);
+    } catch (e) { /* 問い合わせできなくても動作には影響しない */ }
+  }
+  if (!('serviceWorker' in navigator)) setOfflineState('圏外×');
 })();
 </script>
 </body>

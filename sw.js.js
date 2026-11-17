@@ -59,34 +59,61 @@ function fetchAndStore(cache) {
   });
 }
 
+// 2026.11.17 追加：直近の起動で、どちらの版を画面に出したか（'net'＝ネットの最新版／'saved'＝端末に保存した版）
+// 画面側がバージョン表示の横に「圏外OK・保存版」と出すために使う。
+var lastSource = '';
+function mark(source) { lastSource = source; }
+
 function shellResponse() {
   return caches.open(CACHE).then(function (cache) {
     return cache.match(SHELL).then(function (saved) {
       var fromNet = fetchAndStore(cache);
       // 端末に保存した版がまだ無ければ、ネットの結果をそのまま返す
-      if (!saved) return fromNet;
+      if (!saved) return fromNet.then(function (res) { mark('net'); return res; });
       return new Promise(function (resolve) {
         var done = false;
         var timer = setTimeout(function () {
           if (done) return;
           done = true;
+          mark('saved');
           resolve(saved);
         }, WAIT_MS);
         fromNet.then(function (res) {
           if (done) return;
           done = true;
           clearTimeout(timer);
+          mark('net');
           resolve(res);
         }).catch(function () {
           if (done) return;
           done = true;
           clearTimeout(timer);
+          mark('saved');
           resolve(saved);
         });
       });
     });
   });
 }
+
+// 2026.11.17 追加：画面からの問い合わせに、状態を返す
+//   hasSaved＝アプリ本体が端末に保存されているか／source＝直近の起動で出した版
+self.addEventListener('message', function (event) {
+  var d = event.data || {};
+  if (d.type !== 'status') return;
+  var port = event.ports && event.ports[0];
+  if (!port) return;
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(function (cache) { return cache.match(SHELL); })
+      .then(function (saved) {
+        port.postMessage({ type: 'status', hasSaved: !!saved, source: lastSource });
+      })
+      .catch(function () {
+        port.postMessage({ type: 'status', hasSaved: false, source: '' });
+      })
+  );
+});
 
 self.addEventListener('fetch', function (event) {
   var req = event.request;
