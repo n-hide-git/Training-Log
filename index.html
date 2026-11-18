@@ -1,5 +1,12 @@
 <!-- 2026.11.18 Ver.5.0 名前機能を追加：起動時に「あなたの名前」を聞く（2回目からは保持されOKだけ）／ページに名前を持たせ「○○さんの記録」と表示／同じ日付・同じ場所でも人が違えば別ページ -->
-<!-- 2026.11.18 Ver.4.2 JSON読み込みで、読み込んだ記録だけを作成時刻に合わせて既存の記録の間に差し込む（既存の並びは変えない） -->
+<!-- 2026.11.18 Ver.4.9 JSON読み込みで、読み込んだ記録だけを作成時刻に合わせて既存の記録の間に差し込む（既存の並びは変えない） -->
+<!-- 2026.11.17 Ver.4.8 キーボードを文字のキーボードに戻す（Ver.4.7 の数字キーボードは、iPhoneで日本語に切り替えられずメモが書けなかったため）。sw.js.js を sw.js に改名（圏外対応が読み込めていなかった） -->
+<!-- 2026.11.17 Ver.4.7 修正・挿入欄の「／」ボタンを非表示に。iPhoneではタイム入力欄のキーボードを数字の面から始める（メモの修正は文字のキーボード） -->
+<!-- 2026.11.17 Ver.4.6 圏外対応の状態を、バージョン表示の横にいつも表示（圏外OK／圏外OK・保存版／圏外×） -->
+<!-- 2026.11.17 Ver.4.5 圏外・電波が弱い場所でも起動できるように（sw.js を追加。電波があれば最新版、なければ端末に保存した版で起動） -->
+<!-- 2026.11.17 Ver.4.4 場所の選択肢と順番を変更（キョウセイ２輪／パイロンパーク／きそれん！／キョウセイ４輪／にじれん！／その他） -->
+<!-- 2026.11.17 Ver.4.3 配色を「タイミングモニター」に変更（黒・白・灰色を基本に、赤＝押す場所、金＝BEST）。配置と機能は変更なし -->
+<!-- 2026.11.17 Ver.4.2 練習を選ばずにタイムを入れたとき、入力欄のすぐ上に赤字で「練習を選んでください」と表示（選択欄も赤枠）。お知らせ（トースト）がキーボードの裏に隠れないよう位置を調整 -->
 <!-- 2026.11.16 Ver.4.1 写真の行の右に「＋」を追加（この写真の下に挿入）。一番上の写真は「写真の上に挿入」も選べる -->
 <!-- 2026.11.16 Ver.4.0 写真を1枚ずつ記録の流れに追加（縮小して端末内に保存、バックアップにも含める） -->
 <!-- 2026.11.16 Ver.3.16 入力時に画面が勝手に拡大されて右が見切れる問題の対策 -->
@@ -272,6 +279,9 @@ body.editingRow #bar { display: none; }
   border-radius: 8px;
 }
 .pcontrol .pother[hidden] { display: none; }
+/* 2026.11.17 Ver.4.2 追加：練習内容が未選択のままタイムを入れたとき、選択欄を赤枠で知らせる */
+.pcontrol .psel.need, .pcontrol .pother.need,
+#entrySet .pcontrol .psel.need, #entrySet .pcontrol .pother.need { border: 3px solid var(--danger); background: #FFF1F1; }
 .editor .pcontrol { margin: 6px 0 0; }
 
 /* ===== 固定フッター（入力） ===== */
@@ -373,16 +383,6 @@ body.editingRow #bar { display: none; }
 #newBtns { display: flex; gap: 8px; margin-top: 18px; }
 #newBtns .btn { flex: 1; }
 
-/* 2026.11.18 Ver.5.0 追加：名前の入力画面（起動時・メニューから） */
-#nameOverlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(28, 36, 48, 0.7); }
-#nameOverlay[hidden] { display: none; }
-#nameForm { width: min(100%, 420px); padding: 20px 16px; background: #EAF7ED; border: 1px solid #D2E6D7; border-radius: 14px; box-shadow: 0 18px 55px rgba(30, 50, 70, .28); }
-#nameForm h2 { margin: 0 0 6px; font-size: 20px; }
-#nameForm p { margin: 0 0 12px; font-size: 13px; color: var(--sub); line-height: 1.6; }
-#nameInput { display: block; width: 100%; height: 52px; padding: 0 12px; background: #F5FBF6; border: 3px solid var(--accent); border-radius: 10px; font-size: 22px; font-weight: 700; }
-#nameForm .btn { width: 100%; height: 50px; margin-top: 14px; font-size: 18px; }
-#nameForm .btn.sub { margin-top: 8px; }
-
 #toast {
   position: fixed;
   left: 50%;
@@ -402,6 +402,101 @@ body.editingRow #bar { display: none; }
   z-index: 70;
 }
 #toast.show { opacity: 1; }
+
+/* ===================================================================== */
+/* 2026.11.17 Ver.4.3 追加：カラーテーマ「タイミングモニター」              */
+/* 考え方：黒（カーボン）・白・灰色を基本に、色は2か所だけ。                */
+/*   赤 ＝ 押す場所（＋新規・追加・保存・登録）                            */
+/*   金 ＝ BEST（従来どおり）                                              */
+/* 上の従来の配色は消さずに残し、このブロックで上書きしている。             */
+/* 元の配色に戻すときは、このブロックを丸ごと外せばよい。                   */
+/* ===================================================================== */
+:root {
+  --bg: #F3F4F6;
+  --panel: #ECEEF1;
+  --line: #DDE1E6;
+  --text: #15181D;
+  --sub: #5B6470;
+  --accent: #D5202A;
+  --accent-dark: #B01922;
+  --green: #15181D;
+  --green-dark: #2B323B;
+  --gold: #e9b949;
+  --gold-text: #80601a;
+  --danger: #B3261E;
+  --carbon: #15181D;
+  --carbon-2: #2B323B;
+  --field: #F3F4F6;
+  --field-line: #C9CED5;
+}
+/* ヘッダー：カーボンの帯 */
+#top { background: var(--carbon); border-bottom: 1px solid var(--carbon); box-shadow: none; }
+#pageSel { background: #FFFFFF; border-color: #FFFFFF; color: var(--carbon); font-weight: 600; }
+#top .btn.sub { background: var(--carbon-2); border-color: #3A424C; color: #FFFFFF; }
+/* ボタン */
+.btn { box-shadow: 0 2px 5px rgba(21, 24, 29, .14); }
+.btn.sub { background: #FFFFFF; border: 1px solid var(--line); color: var(--text); box-shadow: none; }
+.btn.danger { background: #FFFFFF; border: 1px solid #E5C2C0; color: var(--danger); }
+/* 本文 */
+#main { background: var(--bg); }
+#info { box-shadow: none; }
+#infoPractice { color: var(--carbon); }
+.entry { border-bottom: 1px solid #E3E6EA; }
+/* 練習名タグ：無彩色（BESTの行だけ従来の金色のまま） */
+.entry .ptag { color: var(--carbon-2); background: #ECEEF1; border: 1px solid #D5DAE0; }
+.entry.best .ptag { color: var(--gold-text); background: rgba(233, 185, 73, 0.25); border-color: var(--gold); }
+/* メモ：灰色の線 */
+.entry.memo { background: #F7F8FA; border-left: 4px solid #9AA3AE; }
+.entry.memo .body { color: var(--carbon-2); }
+.x.plus { color: var(--carbon); }
+/* 修正・挿入の欄 */
+.editor { background: rgba(21, 24, 29, 0.05); }
+.editor textarea { background: #FFFFFF; border: 2px solid var(--carbon); }
+.epreview { color: var(--carbon); font-weight: 600; }
+.pcontrol .psel, .pcontrol .pother { background: #FFFFFF; border: 1px solid var(--field-line); }
+/* 下の入力セット：白地にカーボンの枠、追加ボタンだけ赤 */
+#bar { background: var(--panel); border-top: 1px solid var(--line); box-shadow: none; }
+#entry { background: var(--field); border: 1px solid var(--field-line); }
+#entrySet { background: #FFFFFF; border: 2px solid var(--carbon); box-shadow: 0 2px 8px rgba(21, 24, 29, .12); }
+#entrySetHead { color: var(--carbon); }
+#entrySetHead .step { background: var(--carbon); color: #FFFFFF; }
+#entrySetHead .arrow { color: var(--accent); }
+#entrySetHead .setnote { color: #7A838F; }
+#entrySet .pcontrol .psel, #entrySet .pcontrol .pother { border-color: var(--field-line); background: var(--field); color: var(--carbon); }
+#entrySet #entry { background: var(--field); border-color: var(--field-line); }
+#entrySet #entryForm .btn:not(.sub) { background: var(--accent); }
+#entrySet #entryForm .btn:not(.sub):hover { background: var(--accent-dark); }
+#entrySet #preview { color: var(--carbon); font-weight: 600; }
+/* 上の3行より後ろに書くと赤い警告が負けるため、警告の色をここで改めて指定する */
+#preview.warn, .epreview.warn, #entrySet #preview.warn { color: var(--danger); font-weight: 700; }
+.pcontrol .psel.need, .pcontrol .pother.need,
+#entrySet .pcontrol .psel.need, #entrySet .pcontrol .pother.need { border: 3px solid var(--danger); background: #FFF1F1; }
+/* 新規ページ・設定修正フォーム */
+#newForm { background: #FFFFFF; border: 1px solid var(--line); }
+#newForm input, #newForm select { background: var(--field); border: 1px solid var(--field-line); }
+#newForm #fTemp, #newForm #fWeather { background: var(--field); }
+/* 必須欄の太枠は赤だとエラーに見えるので、カーボンにする */
+#newForm input:required { border: 3px solid var(--carbon); }
+/* カレンダー：ノートがある日はカーボン、選択中は金の枠（従来どおり） */
+#calendarPanel { background: #FFFFFF; border: 1px solid var(--line); }
+.cal-nav { background: var(--field); border: 1px solid var(--line); }
+.cal-day { background: var(--field); }
+.cal-day.has-notes { background: var(--carbon); color: #FFFFFF; }
+#calendarLegend .sample { background: var(--carbon); }
+#calendarPanel .btn.sub { background: var(--field); border-color: var(--line); }
+/* 「今日」ボタン：文字が白のまま背景だけ淡色に上書きされていたので、背景もはっきり指定する */
+#calendarPanel #calToday { background: var(--carbon); border-color: var(--carbon); color: #FFFFFF; box-shadow: none; }
+#calendarPanel #calToday:hover { background: var(--carbon-2); }
+
+/* 2026.11.18 Ver.5.0 追加：名前の入力画面（起動時・メニューから）。配色は「タイミングモニター」に合わせる */
+#nameOverlay { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(21, 24, 29, 0.78); }
+#nameOverlay[hidden] { display: none; }
+#nameForm { width: min(100%, 420px); padding: 20px 16px; background: #FFFFFF; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 55px rgba(21, 24, 29, .28); }
+#nameForm h2 { margin: 0 0 6px; font-size: 20px; color: var(--carbon); }
+#nameForm p { margin: 0 0 12px; font-size: 13px; color: var(--sub); line-height: 1.6; }
+#nameInput { display: block; width: 100%; height: 52px; padding: 0 12px; background: var(--field); border: 3px solid var(--carbon); border-radius: 10px; font-size: 22px; font-weight: 700; }
+#nameForm .btn { width: 100%; height: 50px; margin-top: 14px; font-size: 18px; }
+#nameForm .btn.sub { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -548,10 +643,22 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 追加：保存データの形式番号（2 = Ver.3.0 の「日付×場所」形式）
   var SCHEMA = 2;
   // 2026.11.13 変更：場所にも「その他」を追加（選ぶと入力窓が空になり、手入力できる）
-  var PLACES = ['キョウセイ２輪', 'キョウセイ４輪', 'PPS', 'レインボー', 'その他'];
+  // 2026.11.17 Ver.4.4 変更：場所の選択肢と順番を変更（旧：キョウセイ２輪／キョウセイ４輪／PPS／レインボー／その他）。「その他」（手入力）は末尾に残す
+  var PLACES = ['キョウセイ２輪', 'パイロンパーク', 'きそれん！', 'キョウセイ４輪', 'にじれん！', 'その他'];
   // 2026.11.16 変更：練習内容の基本の選択肢。「その他」は別に末尾へ付ける（手入力した内容は次回から一覧に残る）
   var PRACTICES = ['8の字GP', '回転弁当', '牛丼弁当', 'アタックコース'];
   var OTHER = 'その他';
+  // 2026.11.17 Ver.4.2 追加：練習内容が未選択のときのメッセージ（下の入力欄・修正欄・挿入欄で共用）
+  var NEED_PRACTICE_MSG = '練習を選んでください（「▼ 何の練習？」から）';
+  // 2026.11.17 Ver.4.7 追加：タイム入力欄で最初に出すキーボードの種類
+  // iPhone / iPad では inputmode="numeric" にすると、数字と記号（「/」を含む）の面から始まり、文字のキーボードへも切り替えられる。
+  // Android などでは numeric にすると数字だけのキーボードになり、メモが書けなくなるため、これまでどおり text のままにする。
+  var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // 2026.11.17 Ver.4.8 変更：実機（iPhone）で確認した結果、inputmode="numeric" は数字だけのテンキーになり、
+  // 日本語へ切り替えられずメモが書けなかった。そのため、すべての端末で文字のキーボード（text）に戻す。
+  // （旧：var TIME_INPUTMODE = IS_IOS ? 'numeric' : 'text';）
+  var TIME_INPUTMODE = 'text';
   var WEATHERS = ['晴れ', '曇り', '雨'];
   var WD = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -676,6 +783,14 @@ body.editingRow #bar { display: none; }
   var toastTimer = null;
   function toast(msg) {
     var t = $('toast');
+    // 2026.11.17 Ver.4.2 追加：キーボードが出ている間は、その高さの分だけ上に表示する（iPhoneでキーボードの裏に隠れて見えなくなるのを防ぐ）
+    try {
+      var vv = window.visualViewport;
+      var kb = vv ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0;
+      // 2026.11.17 Ver.4.3 変更：下の入力セットに重ならないよう、入力セットのすぐ上に出す（練習の選択欄をお知らせが隠していた）
+      var barH = $('bar') ? $('bar').offsetHeight : 0;
+      t.style.bottom = (kb + barH + 12) + 'px';
+    } catch (err) { t.style.bottom = ''; }
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(toastTimer);
@@ -883,13 +998,13 @@ body.editingRow #bar { display: none; }
 
   // 2026.11.18 Ver.5.0 追加：名前まわり
   function cleanName(v) { return String(v || '').replace(/\s+/g, ' ').trim(); }
-  function ownerLabel(p) { return p.owner ? p.owner + 'さん' : ''; }
   // その日のページのうち、自分の名前のページを優先して開く（なければその日の最後のページ）
   function pickPageForDay(date) {
     var day = sortedPages().filter(function (x) { return x.date === date; });
     if (!day.length) return null;
     var mine = day.filter(function (x) { return (x.owner || '') === state.userName; });
-    return (mine.length ? mine : day)[(mine.length ? mine : day).length - 1];
+    var pool = mine.length ? mine : day;
+    return pool[pool.length - 1];
   }
   // 名前のない旧ページ（Ver.4.x 以前の記録）は、最初に入力した名前のページにする
   function adoptOwnerless(name) {
@@ -959,22 +1074,43 @@ body.editingRow #bar { display: none; }
       other.hidden = sel.value !== OTHER;
       other.value = '';
     }
+    // 2026.11.17 Ver.4.2 追加：未選択の赤枠を消す
+    function clearNeed() {
+      sel.classList.remove('need');
+      other.classList.remove('need');
+    }
     sel.addEventListener('change', function () {
       other.hidden = sel.value !== OTHER;
       if (!other.hidden) {
         other.value = '';
         other.focus();
       }
+      // 2026.11.17 Ver.4.2 追加：選び直したら赤枠を消し、呼び出し元（入力欄のメッセージ）にも知らせる
+      clearNeed();
+      if (typeof api.onChange === 'function') api.onChange();
+    });
+    // 2026.11.17 Ver.4.2 追加：「その他」に文字を入れたら赤枠を消す
+    other.addEventListener('input', function () {
+      clearNeed();
+      if (typeof api.onChange === 'function') api.onChange();
     });
     fill(initial);
-    return {
+    var api = {
       root: root,
       get: function () {
         return sel.value === OTHER ? other.value.trim() : sel.value;
       },
-      set: function (v) { fill(v); },
-      setDisabled: function (d) { sel.disabled = d; other.disabled = d; }
+      set: function (v) { fill(v); clearNeed(); },
+      setDisabled: function (d) { sel.disabled = d; other.disabled = d; },
+      // 2026.11.17 Ver.4.2 追加：練習内容が未選択のとき、赤枠で知らせる（「その他」を選んで未入力なら入力欄の方を赤枠に）
+      alertNeed: function () {
+        clearNeed();
+        if (sel.value === OTHER) other.classList.add('need');
+        else sel.classList.add('need');
+      },
+      onChange: null
     };
+    return api;
   }
 
   // ---------- タイム入力ルール ----------
@@ -1135,6 +1271,8 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 追加：下の入力欄の練習内容（前回の選択を state.lastPractice から引き継ぐ）
   var barPractice = buildPracticeControl(state.lastPractice);
   $('practiceHost').appendChild(barPractice.root);
+  // 2026.11.17 Ver.4.2 追加：練習を選び直したら、入力欄の上の赤いメッセージを消す（タイムの確認表示に戻す）
+  barPractice.onChange = function () { if (entry._rules) entry._rules.show(); };
   function syncBarPractice() { barPractice.set(state.lastPractice); }
 
   // ---------- 描画 ----------
@@ -1187,7 +1325,8 @@ body.editingRow #bar { display: none; }
   // 2026.11.13 変更：修正・挿入用のエディタ行
   // 2026.11.16 変更：練習内容の選択を追加。onClick(入力値, 練習内容)
   // buttons: [{label, cls, submit, onClick(入力値, 練習内容)}]
-  function buildEditor(initial, placeholder, buttons, practiceInit) {
+  // 2026.11.17 Ver.4.7 変更：inputMode（キーボードの種類）を受け取れるようにした。省略時はタイム用（TIME_INPUTMODE）
+  function buildEditor(initial, placeholder, buttons, practiceInit, inputMode) {
     var form = el('form', 'editor');
     form.autocomplete = 'off';
     var row = el('div', 'erow');
@@ -1195,28 +1334,39 @@ body.editingRow #bar { display: none; }
     slash.type = 'button';
     var inp = el('textarea');
     inp.rows = 1;
+    // 2026.11.17 Ver.4.7 追加：タイムの修正・挿入は数字のキーボードから始める（メモの修正は文字のキーボード）
+    inp.setAttribute('inputmode', inputMode || TIME_INPUTMODE);
     inp.value = initial;
     inp.placeholder = placeholder;
     var pv = el('div', 'epreview');
     var rules = attachRules(inp, pv);
     var pc = buildPracticeControl(practiceInit || '');
+    // 2026.11.17 Ver.4.2 追加：ボタンの処理へ渡す、メッセージ表示用の道具（入力欄のすぐ下に赤字／練習の選択欄を赤枠）
+    var ui = {
+      warn: function (msg) { rules.warn(msg); },
+      needPractice: function () {
+        rules.warn(NEED_PRACTICE_MSG);
+        pc.alertNeed();
+      }
+    };
+    pc.onChange = function () { rules.show(); };
     rules.show();
     slash.addEventListener('click', rules.insertSlash);
-    row.appendChild(slash);
+    // 2026.11.17 Ver.4.7 変更：修正・挿入欄の「／」ボタンは使わないため表示しない（以前は row.appendChild(slash) で入力欄の左に出していた）
     row.appendChild(inp);
     var btns = el('div', 'ebtns' + (buttons.length > 3 ? ' four' : ''));
     buttons.forEach(function (b) {
       var bt = el('button', 'btn ' + (b.cls || '') + (b.submit ? ' primary' : ''), b.label);
       bt.type = b.submit ? 'submit' : 'button';
       if (!b.submit) {
-        bt.addEventListener('click', function () { b.onClick(inp.value.trim(), pc.get()); });
+        bt.addEventListener('click', function () { b.onClick(inp.value.trim(), pc.get(), ui); });
       }
       btns.appendChild(bt);
     });
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var ok = buttons.filter(function (b) { return b.submit; })[0];
-      if (ok) ok.onClick(inp.value.trim(), pc.get());
+      if (ok) ok.onClick(inp.value.trim(), pc.get(), ui);
     });
     // 2026.11.16 Ver.4.0 追加：ボタンを押した瞬間に入力欄のフォーカスが外れて欄の高さが縮み、ボタンの位置がずれて押せなくなるのを防ぐ
     form.addEventListener('mousedown', function (ev) {
@@ -1230,13 +1380,16 @@ body.editingRow #bar { display: none; }
   }
 
   // 2026.11.16 変更：練習内容（practice）を受け取り、タイムなら必須にする
-  function saveEdit(p, e, raw, practice) {
+  // 2026.11.17 Ver.4.2 変更：ui（メッセージ表示用）を受け取り、入力欄のすぐ下にも赤字で理由を出す
+  function saveEdit(p, e, raw, practice, ui) {
     if (!raw) {
+      if (ui) ui.warn('空欄は保存できません（削除は ✕ で）');
       toast('空欄は保存できません（削除は ✕ で）');
       return false;
     }
     var terr = timeError(raw);
     if (terr) {
+      if (ui) ui.warn(terr);
       toast(terr);
       return false;
     }
@@ -1245,7 +1398,8 @@ body.editingRow #bar { display: none; }
     var ne = buildEntry(raw);
     if (ne.type === 'time') {
       if (!practice) {
-        toast('何の練習のタイムか選んでください');
+        if (ui) ui.needPractice();
+        toast(NEED_PRACTICE_MSG);
         return false;
       }
       ne.practice = practice;
@@ -1264,14 +1418,14 @@ body.editingRow #bar { display: none; }
     var buttons = [
       {
         label: '保存', submit: true,
-        onClick: function (raw, practice) {
-          if (saveEdit(p, e, raw, practice)) { editing = null; renderList(); }
+        onClick: function (raw, practice, ui) {
+          if (saveEdit(p, e, raw, practice, ui)) { editing = null; renderList(); }
         }
       },
       {
         label: 'この下に挿入', cls: 'sub',
-        onClick: function (raw, practice) {
-          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice)) return;
+        onClick: function (raw, practice, ui) {
+          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice, ui)) return;
           editing = { id: e.id, mode: 'insert' };
           renderList();
         }
@@ -1285,14 +1439,15 @@ body.editingRow #bar { display: none; }
     if (indexOfEntry(p, e.id) === 0) {
       buttons.splice(1, 0, {
         label: 'この上に挿入', cls: 'sub',
-        onClick: function (raw, practice) {
-          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice)) return;
+        onClick: function (raw, practice, ui) {
+          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice, ui)) return;
           editing = { id: e.id, mode: 'insertAbove' };
           renderList();
         }
       });
     }
-    return buildEditor(orig, '1/02/333 またはメモ', buttons, origPractice);
+    // 2026.11.17 Ver.4.7 変更：メモの行を修正するときは文字のキーボード、タイムの行は数字のキーボードから始める
+    return buildEditor(orig, '1/02/333 またはメモ', buttons, origPractice, e.type === 'memo' ? 'text' : TIME_INPUTMODE);
   }
 
   // 2026.11.16 変更：挿入時も練習内容を付ける（前回の選択を引き継ぐ）
@@ -1301,10 +1456,12 @@ body.editingRow #bar { display: none; }
     var insForm = buildEditor('', (above ? '先頭に挿入：' : '挿入：') + '1/02/333 またはメモ', [
       {
         label: '挿入', submit: true,
-        onClick: function (raw, practice) {
+        onClick: function (raw, practice, ui) {
           if (!raw) return;
           var terr = timeError(raw);
           if (terr) {
+            // 2026.11.17 Ver.4.2 追加：入力欄のすぐ下にも赤字で理由を出す
+            if (ui) ui.warn(terr);
             toast(terr);
             return;
           }
@@ -1313,7 +1470,9 @@ body.editingRow #bar { display: none; }
           var ne = buildEntry(raw);
           if (ne.type === 'time') {
             if (!practice) {
-              toast('何の練習のタイムか選んでください');
+              // 2026.11.17 Ver.4.2 変更：入力欄のすぐ下に赤字で表示し、練習の選択欄を赤枠にする
+              if (ui) ui.needPractice();
+              toast(NEED_PRACTICE_MSG);
               return;
             }
             ne.practice = practice;
@@ -1834,6 +1993,8 @@ body.editingRow #bar { display: none; }
 
   // ---------- 下部のタイム・メモ入力 ----------
   var rules = attachRules(entry, preview);
+  // 2026.11.17 Ver.4.7 追加：下の入力欄は、数字のキーボードから始める（日本語へは自分で切り替える）
+  entry.setAttribute('inputmode', TIME_INPUTMODE);
 
   $('slashBtn').addEventListener('click', rules.insertSlash);
 
@@ -1857,7 +2018,10 @@ body.editingRow #bar { display: none; }
     if (ne.type === 'time') {
       var practice = barPractice.get();
       if (!practice) {
-        toast('何の練習のタイムか選んでください');
+        // 2026.11.17 Ver.4.2 変更：入力欄のすぐ上に赤字で表示し、練習の選択欄を赤枠にする（トーストはキーボードの裏に隠れることがあるため）
+        rules.warn(NEED_PRACTICE_MSG);
+        barPractice.alertNeed();
+        toast(NEED_PRACTICE_MSG);
         return;
       }
       ne.practice = practice;
@@ -1920,7 +2084,7 @@ body.editingRow #bar { display: none; }
     return [e.type || '', e.text || '', (e.ms === undefined ? '' : e.ms)].join('|');
   }
 
-  // 2026.11.18 Ver.4.2 追加：読み込んだ記録を、作成時刻（createdAt）に合わせて既存の記録の間に差し込む。
+  // 2026.11.18 Ver.4.9 追加：読み込んだ記録を、作成時刻（createdAt）に合わせて既存の記録の間に差し込む。
   // 後ろから見て「作成時刻が同じか前」の最初の記録の直後に入れる。既存の記録の並びは変えない。
   // 作成時刻がない記録・比較できる記録がない場合は、末尾に追加する。
   function insertByTime(list, item) {
@@ -1990,7 +2154,7 @@ body.editingRow #bar { display: none; }
           }
         }
         if (!existing) {
-          // 2026.11.18 Ver.4.2 変更：末尾に足さず、作成時刻に合わせて差し込む
+          // 2026.11.18 Ver.4.9 変更：末尾に足さず、作成時刻に合わせて差し込む
           insertByTime(localPage.entries, incomingEntry);
           addedEntries++;
           return;
@@ -2008,7 +2172,7 @@ body.editingRow #bar { display: none; }
         // 同じIDなのに内容が異なる場合は、どちらも残すため別IDで追加する。
         var conflictCopy = JSON.parse(JSON.stringify(incomingEntry));
         conflictCopy.id = uid();
-        // 2026.11.18 Ver.4.2 変更：こちらも作成時刻に合わせて差し込む
+        // 2026.11.18 Ver.4.9 変更：こちらも作成時刻に合わせて差し込む
         insertByTime(localPage.entries, conflictCopy);
         addedEntries++;
         duplicatedConflicts++;
@@ -2136,7 +2300,7 @@ body.editingRow #bar { display: none; }
     state.current = initialPages.length ? initialPages[initialPages.length - 1].id : null;
   }
   state.selectedDate = selectedDate;
-  // 2026.11.18 Ver.5.0 変更：先に名前を聞いてから、画面を表示する
+  // 2026.11.18 Ver.5.0 変更：先に名前を聞いてから、画面を整える
   askName(false, function () {
     var startPage = pickPageForDay(selectedDate);
     state.current = startPage ? startPage.id : null;
@@ -2147,6 +2311,65 @@ body.editingRow #bar { display: none; }
   });
   // 名前を入力する前も、後ろの画面は表示しておく（入力画面が上に重なる）
   renderAll(true);
+
+  // ---------- 2026.11.17 Ver.4.5 追加：圏外・電波が弱い場所でも起動できるようにする ----------
+  // 同じフォルダの sw.js が、このページを端末に保存する。
+  // 電波があれば最新版を取りに行き、なければ（または3秒待っても届かなければ）端末に保存した版で起動する。
+  // 記録（localStorage）と写真（IndexedDB）には触らない。
+  (function () {
+    try {
+      if (!('serviceWorker' in navigator)) return;
+      var host = location.hostname;
+      if (location.protocol !== 'https:' && host !== 'localhost' && host !== '127.0.0.1') return;
+      // 初めて端末に保存できたときだけ、お知らせを出す
+      var hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        // 2026.11.17 Ver.4.6 追加：担当が決まったら、バージョン表示の横の状態も更新する
+        askOfflineState();
+        if (hadController) return;
+        hadController = true;
+        toast('端末に保存しました。圏外でも開けます');
+      });
+      navigator.serviceWorker.register('./sw.js').catch(function () {
+        /* 登録できなくても、これまでどおり使える */
+        // 2026.11.17 Ver.4.6 追加：登録できなかったことをバージョン表示の横に出す
+        setOfflineState('圏外×');
+      });
+      // 2026.11.17 Ver.4.6 追加：準備ができたら状態を問い合わせる
+      navigator.serviceWorker.ready.then(function () { askOfflineState(); }).catch(function () {});
+      askOfflineState();
+    } catch (e) { /* 対応していない環境では何もしない */ }
+  })();
+
+  // ---------- 2026.11.17 Ver.4.6 追加：圏外対応の状態を、バージョン表示の横にいつも出す ----------
+  // 一度だけ2秒出るお知らせでは見逃すため、常に見える表示にした。
+  //   圏外OK        ＝ アプリ本体が端末に保存されている（圏外でも開ける）
+  //   圏外OK・保存版 ＝ 今回は、端末に保存した版で起動した（圏外、または電波が弱かった）
+  //   圏外×         ＝ この環境では圏外対応が使えない（通信があれば、これまでどおり使える）
+  //   表示なし       ＝ まだ準備中（初回は数秒かかる）
+  var verBase = { ver: $('ver').textContent, emptyVer: $('emptyVer').textContent };
+  function setOfflineState(text) {
+    try {
+      $('ver').textContent = verBase.ver + (text ? ' ・' + text : '');
+      $('emptyVer').textContent = verBase.emptyVer + (text ? ' ・' + text : '');
+    } catch (e) { /* 表示できなくても動作には影響しない */ }
+  }
+  function askOfflineState() {
+    try {
+      if (!('serviceWorker' in navigator)) { setOfflineState('圏外×'); return; }
+      var sw = navigator.serviceWorker.controller;
+      if (!sw || typeof MessageChannel === 'undefined') return;
+      var ch = new MessageChannel();
+      ch.port1.onmessage = function (ev) {
+        var d = ev.data || {};
+        if (d.type !== 'status') return;
+        if (!d.hasSaved) { setOfflineState(''); return; }
+        setOfflineState(d.source === 'saved' ? '圏外OK・保存版' : '圏外OK');
+      };
+      sw.postMessage({ type: 'status' }, [ch.port2]);
+    } catch (e) { /* 問い合わせできなくても動作には影響しない */ }
+  }
+  if (!('serviceWorker' in navigator)) setOfflineState('圏外×');
 })();
 </script>
 </body>
