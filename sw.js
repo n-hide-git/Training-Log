@@ -64,10 +64,9 @@ function fetchAndStore(cache) {
 var lastSource = '';
 function mark(source) { lastSource = source; }
 
-function shellResponse() {
-  return caches.open(CACHE).then(function (cache) {
+function shellResponse(cacheReady, fromNet) {
+  return cacheReady.then(function (cache) {
     return cache.match(SHELL).then(function (saved) {
-      var fromNet = fetchAndStore(cache);
       // 端末に保存した版がまだ無ければ、ネットの結果をそのまま返す
       if (!saved) return fromNet.then(function (res) { mark('net'); return res; });
       return new Promise(function (resolve) {
@@ -122,8 +121,12 @@ self.addEventListener('fetch', function (event) {
   try { url = new URL(req.url); } catch (e) { return; }
   if (url.origin !== self.location.origin) return;
   if (!isShellRequest(req, url)) return;
+  var cacheReady = caches.open(CACHE);
+  var fromNet = cacheReady.then(fetchAndStore);
+  // 保存版を返した後も、ネットから取得したページの保存が終わるまで待つ。
+  event.waitUntil(fromNet.catch(function () {}));
   event.respondWith(
-    shellResponse().catch(function () {
+    shellResponse(cacheReady, fromNet).catch(function () {
       // 保存した版も無く、ネットにもつながらない場合は、通常の読み込みに任せる
       return fetch(req);
     })

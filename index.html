@@ -1,3 +1,4 @@
+<!-- 2026.11.20 Ver.5.1 タイム専用の数字キーと日本語メモ欄を追加 -->
 <!-- 2026.11.18 Ver.5.0 名前機能を追加：起動時に「あなたの名前」を聞く（2回目からは保持されOKだけ）／ページに名前を持たせ「○○さんの記録」と表示／同じ日付・同じ場所でも人が違えば別ページ -->
 <!-- 2026.11.18 Ver.4.9 JSON読み込みで、読み込んだ記録だけを作成時刻に合わせて既存の記録の間に差し込む（既存の並びは変えない） -->
 <!-- 2026.11.17 Ver.4.8 キーボードを文字のキーボードに戻す（Ver.4.7 の数字キーボードは、iPhoneで日本語に切り替えられずメモが書けなかったため）。sw.js.js を sw.js に改名（圏外対応が読み込めていなかった） -->
@@ -293,9 +294,21 @@ body.editingRow #bar { display: none; }
   box-shadow: 0 -2px 8px rgba(35, 55, 75, .045);
 }
 /* 2026.11.13 変更：日本語入力時はスラッシュボタンを非表示 */
-#slashBtn { display: none; }
+
 #preview { min-height: 20px; padding: 0 4px 4px; font-size: 14px; color: var(--gold-text); }
-#entryForm { display: flex; gap: 6px; }
+#entryForm { display: grid; gap: 6px; }
+#entryActions { display: flex; align-items: center; gap: 6px; }
+#entry { width: 0; }
+#entryMemo, .editorMemo {
+  width: 100%; min-height: 68px; padding: 8px; resize: vertical;
+  font: inherit; font-size: 16px; border: 1px solid #9AA3AE; border-radius: 8px;
+}
+#timeKeys:not([hidden]) { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+#bar #timeKeys button { padding: 0; font-size: 18px; }
+.entry.time .attachedMemo {
+  margin: 4px 0 2px; white-space: pre-wrap; overflow-wrap: anywhere;
+  font-size: 17px; font-weight: 400; line-height: 1.5;
+}
 /* 2026.11.13 変更：入力欄を複数行（書いている間だけ上下に広がる）に変更 */
 #entryForm { align-items: flex-end; }
 #entry {
@@ -523,10 +536,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.0  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.1  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.0  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.1  nakaZ</span></div>
     <!-- 2026.11.18 Ver.5.0 追加：○○さんの記録 -->
     <div id="infoOwner" hidden></div>
     <div id="infoPractice"></div>
@@ -550,11 +563,15 @@ body.editingRow #bar { display: none; }
   <div id="preview"></div>
   <!-- 2026.11.16 Ver.3.1 変更：数字キーパッドと「123」切替ボタンを廃止 -->
   <form id="entryForm" autocomplete="off">
-    <button id="slashBtn" class="btn sub" type="button" aria-label="スラッシュ入力">／</button>
-    <!-- 2026.11.16 Ver.4.0 追加：写真ボタン（カメラ撮影／ライブラリから1枚選ぶ） -->
-    <button id="photoBtn" class="btn sub" type="button" aria-label="写真を追加">📷</button>
-    <textarea id="entry" rows="1" inputmode="text" enterkeyhint="done" placeholder="1/02/333（0分は /50/222）またはメモ"></textarea>
-    <button class="btn" type="submit">追加</button>
+    <div id="entryActions">
+      <input id="entry" type="text" inputmode="none" readonly aria-label="タイム"
+        aria-controls="timeKeys" aria-expanded="false" placeholder="タイム 1/02/333">
+      <button id="memoBtn" class="btn sub" type="button" aria-controls="entryMemo" aria-expanded="false">メモ</button>
+      <button class="btn" type="submit">登録</button>
+      <button id="photoBtn" class="btn sub" type="button" aria-label="写真を追加">📷</button>
+    </div>
+    <div id="timeKeys" role="group" aria-label="タイム入力" hidden></div>
+    <textarea id="entryMemo" rows="2" lang="ja" inputmode="text" aria-label="メモ" placeholder="感想や気づき" hidden></textarea>
   </form>
   </div>
 </footer>
@@ -754,8 +771,10 @@ body.editingRow #bar { display: none; }
       state.selectedDate = selectedDate;
       state.schema = SCHEMA;
       localStorage.setItem(KEY, JSON.stringify(state));
+      return true;
     } catch (e) {
       toast('保存に失敗しました（容量不足など）');
+      return false;
     }
   }
 
@@ -1182,7 +1201,7 @@ body.editingRow #bar { display: none; }
     return min + '/' + pad2(sec) + '/' + ('00' + ms).slice(-3);
   }
   // 2026.11.13 変更：入力欄にタイムのルールを付ける（下の入力欄と修正欄で共用）
-  function attachRules(inp, pv) {
+  function attachRules(inp, pv, memoOnly) {
     var prev = inp.value;
     // 2026.11.13 変更：書いている間だけ入力欄を上下に広げる（画面の約35%まで）
     function grow() {
@@ -1207,7 +1226,7 @@ body.editingRow #bar { display: none; }
     });
 
     function show() {
-      var t = parseTime(norm(inp.value));
+      var t = memoOnly ? null : parseTime(norm(inp.value));
       pv.textContent = t ? '→ ' + t.text : '';
       pv.classList.remove('warn');
       grow();
@@ -1219,6 +1238,7 @@ body.editingRow #bar { display: none; }
     }
     // 2026.11.13 変更：日本語IME入力中のカーソル・変換状態を保護
     function apply() {
+      if (memoOnly) { show(); return; }
       var v = norm(inp.value);
       var why = liveCheck(v);
 
@@ -1303,7 +1323,7 @@ body.editingRow #bar { display: none; }
     var empty = $('empty');
     empty.hidden = !!p;
     $('info').hidden = !p;
-    $('entryForm').querySelectorAll('textarea,button').forEach(function (e) { e.disabled = !p; });
+    $('entryForm').querySelectorAll('input,textarea,button').forEach(function (e) { e.disabled = !p; });
     barPractice.setDisabled(!p);
     if (!p) {
       $('emptyMessage').textContent = formatDate(selectedDate) + 'のノートはありません。「＋新規」から、この日付のページ（場所）を作成できます。';
@@ -1326,7 +1346,7 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 変更：練習内容の選択を追加。onClick(入力値, 練習内容)
   // buttons: [{label, cls, submit, onClick(入力値, 練習内容)}]
   // 2026.11.17 Ver.4.7 変更：inputMode（キーボードの種類）を受け取れるようにした。省略時はタイム用（TIME_INPUTMODE）
-  function buildEditor(initial, placeholder, buttons, practiceInit, inputMode) {
+  function buildEditor(initial, placeholder, buttons, practiceInit, inputMode, initialMemo) {
     var form = el('form', 'editor');
     form.autocomplete = 'off';
     var row = el('div', 'erow');
@@ -1338,8 +1358,17 @@ body.editingRow #bar { display: none; }
     inp.setAttribute('inputmode', inputMode || TIME_INPUTMODE);
     inp.value = initial;
     inp.placeholder = placeholder;
+    var memoInput = null;
+    if (initialMemo !== undefined) {
+      memoInput = el('textarea', 'editorMemo');
+      memoInput.rows = 2;
+      memoInput.lang = 'ja';
+      memoInput.placeholder = 'メモ';
+      memoInput.setAttribute('aria-label', 'メモ');
+      memoInput.value = initialMemo;
+    }
     var pv = el('div', 'epreview');
-    var rules = attachRules(inp, pv);
+    var rules = attachRules(inp, pv, initialMemo === undefined && initial !== '');
     var pc = buildPracticeControl(practiceInit || '');
     // 2026.11.17 Ver.4.2 追加：ボタンの処理へ渡す、メッセージ表示用の道具（入力欄のすぐ下に赤字／練習の選択欄を赤枠）
     var ui = {
@@ -1359,20 +1388,21 @@ body.editingRow #bar { display: none; }
       var bt = el('button', 'btn ' + (b.cls || '') + (b.submit ? ' primary' : ''), b.label);
       bt.type = b.submit ? 'submit' : 'button';
       if (!b.submit) {
-        bt.addEventListener('click', function () { b.onClick(inp.value.trim(), pc.get(), ui); });
+        bt.addEventListener('click', function () { b.onClick(inp.value.trim(), pc.get(), ui, memoInput ? memoInput.value.trim() : undefined); });
       }
       btns.appendChild(bt);
     });
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       var ok = buttons.filter(function (b) { return b.submit; })[0];
-      if (ok) ok.onClick(inp.value.trim(), pc.get(), ui);
+      if (ok) ok.onClick(inp.value.trim(), pc.get(), ui, memoInput ? memoInput.value.trim() : undefined);
     });
     // 2026.11.16 Ver.4.0 追加：ボタンを押した瞬間に入力欄のフォーカスが外れて欄の高さが縮み、ボタンの位置がずれて押せなくなるのを防ぐ
     form.addEventListener('mousedown', function (ev) {
       if (ev.target.closest && ev.target.closest('button')) ev.preventDefault();
     });
     form.appendChild(row);
+    if (memoInput) form.appendChild(memoInput);
     form.appendChild(pv);
     form.appendChild(pc.root);
     form.appendChild(btns);
@@ -1381,13 +1411,13 @@ body.editingRow #bar { display: none; }
 
   // 2026.11.16 変更：練習内容（practice）を受け取り、タイムなら必須にする
   // 2026.11.17 Ver.4.2 変更：ui（メッセージ表示用）を受け取り、入力欄のすぐ下にも赤字で理由を出す
-  function saveEdit(p, e, raw, practice, ui) {
+  function saveEdit(p, e, raw, practice, ui, memo) {
     if (!raw) {
       if (ui) ui.warn('空欄は保存できません（削除は ✕ で）');
       toast('空欄は保存できません（削除は ✕ で）');
       return false;
     }
-    var terr = timeError(raw);
+    var terr = e.type === 'memo' ? '' : timeError(raw);
     if (terr) {
       if (ui) ui.warn(terr);
       toast(terr);
@@ -1395,7 +1425,12 @@ body.editingRow #bar { display: none; }
     }
     var idx = indexOfEntry(p, e.id);
     if (idx < 0) return false;
-    var ne = buildEntry(raw);
+    var ne = e.type === 'memo' ? { type: 'memo', text: raw, practice: '' } : buildEntry(raw);
+    if (e.type === 'time' && ne.type !== 'time') {
+      ui.warn('タイムの形が違います（例：1/02/333）');
+      return false;
+    }
+    if (memo) ne.memo = memo;
     if (ne.type === 'time') {
       if (!practice) {
         if (ui) ui.needPractice();
@@ -1408,24 +1443,28 @@ body.editingRow #bar { display: none; }
     ne.createdAt = e.createdAt || null;
     ne.updatedAt = Date.now();
     p.entries[idx] = ne;
-    save();
+    if (!save()) {
+      p.entries[idx] = e;
+      return false;
+    }
     return true;
   }
 
   function buildEditRow(p, e) {
     var orig = editText(e);
     var origPractice = e.practice || '';
+    var origMemo = e.type === 'time' ? (e.memo || '') : undefined;
     var buttons = [
       {
         label: '保存', submit: true,
-        onClick: function (raw, practice, ui) {
-          if (saveEdit(p, e, raw, practice, ui)) { editing = null; renderList(); }
+        onClick: function (raw, practice, ui, memo) {
+          if (saveEdit(p, e, raw, practice, ui, memo)) { editing = null; renderList(); }
         }
       },
       {
         label: 'この下に挿入', cls: 'sub',
-        onClick: function (raw, practice, ui) {
-          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice, ui)) return;
+        onClick: function (raw, practice, ui, memo) {
+          if ((raw !== orig || practice !== origPractice || memo !== origMemo) && !saveEdit(p, e, raw, practice, ui, memo)) return;
           editing = { id: e.id, mode: 'insert' };
           renderList();
         }
@@ -1439,15 +1478,15 @@ body.editingRow #bar { display: none; }
     if (indexOfEntry(p, e.id) === 0) {
       buttons.splice(1, 0, {
         label: 'この上に挿入', cls: 'sub',
-        onClick: function (raw, practice, ui) {
-          if ((raw !== orig || practice !== origPractice) && !saveEdit(p, e, raw, practice, ui)) return;
+        onClick: function (raw, practice, ui, memo) {
+          if ((raw !== orig || practice !== origPractice || memo !== origMemo) && !saveEdit(p, e, raw, practice, ui, memo)) return;
           editing = { id: e.id, mode: 'insertAbove' };
           renderList();
         }
       });
     }
     // 2026.11.17 Ver.4.7 変更：メモの行を修正するときは文字のキーボード、タイムの行は数字のキーボードから始める
-    return buildEditor(orig, '1/02/333 またはメモ', buttons, origPractice, e.type === 'memo' ? 'text' : TIME_INPUTMODE);
+    return buildEditor(orig, e.type === 'time' ? '1/02/333' : 'メモ', buttons, origPractice, TIME_INPUTMODE, origMemo);
   }
 
   // 2026.11.16 変更：挿入時も練習内容を付ける（前回の選択を引き継ぐ）
@@ -1536,6 +1575,7 @@ body.editingRow #bar { display: none; }
       body.appendChild(img);
       loadPhotoInto(img, e.photoId);
     }
+    if (e.type === 'time' && e.memo) body.appendChild(el('div', 'attachedMemo', e.memo));
     var stamp = entryStamp(e);
     if (stamp) body.appendChild(el('span', 'stamp', stamp));
     if (e.type !== 'photo') {
@@ -1993,29 +2033,74 @@ body.editingRow #bar { display: none; }
 
   // ---------- 下部のタイム・メモ入力 ----------
   var rules = attachRules(entry, preview);
-  // 2026.11.17 Ver.4.7 追加：下の入力欄は、数字のキーボードから始める（日本語へは自分で切り替える）
-  entry.setAttribute('inputmode', TIME_INPUTMODE);
+  var entryMemo = $('entryMemo');
+  var memoBtn = $('memoBtn');
+  var timeKeys = $('timeKeys');
 
-  $('slashBtn').addEventListener('click', rules.insertSlash);
+  function showTimeKeys(open) {
+    timeKeys.hidden = !open;
+    entry.setAttribute('aria-expanded', String(open));
+  }
 
-  // 2026.11.16 Ver.3.1 変更：入力方式の切替ボタンとキーパッドの動作を廃止
+  function openTimeKeys() {
+    entryMemo.blur();
+    showTimeKeys(true);
+  }
 
-  // 2026.11.16 変更：タイムには練習内容が必須。選んだ練習内容を次回に引き継ぐ
+  entry.addEventListener('click', openTimeKeys);
+  entry.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      showTimeKeys(false);
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openTimeKeys();
+      timeKeys.firstElementChild.focus();
+    } else if (event.key === 'Backspace') {
+      event.preventDefault();
+      rules.backspace();
+    } else if (/^[0-9/]$/.test(event.key)) {
+      rules.append(event.key);
+    }
+  });
+
+  '1234567890/⌫'.split('').forEach(function (key) {
+    var button = el('button', 'btn sub', key === '/' ? '／' : key);
+    button.type = 'button';
+    if (key === '⌫') button.setAttribute('aria-label', '1文字削除');
+    button.addEventListener('click', function () {
+      if (key === '⌫') rules.backspace();
+      else rules.append(key);
+    });
+    timeKeys.appendChild(button);
+  });
+
+  memoBtn.addEventListener('click', function () {
+    showTimeKeys(false);
+    entryMemo.hidden = false;
+    memoBtn.setAttribute('aria-expanded', 'true');
+    // iPhoneでキーボードが開くよう、タップの処理中にフォーカスする。
+    entryMemo.focus();
+  });
+
   $('entryForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var p = currentPage();
     if (!p) return;
     var raw = entry.value.trim();
-    if (!raw) return;
-    // 2026.11.16 Ver.3.4 追加：あり得ないタイムはメッセージを出して登録しない
-    var terr = timeError(raw);
+    var memo = entryMemo.value.trim();
+    if (!raw && !memo) return;
+    var terr = raw && !parseTime(norm(raw))
+      ? (timeError(raw) || 'タイムの形が違います（例：1/02/333）')
+      : '';
     if (terr) {
       rules.warn(terr);
       toast(terr);
       return;
     }
-    var ne = buildEntry(raw);
+    var ne = raw ? buildEntry(raw) : { type: 'memo', text: memo, practice: '' };
+    var previousPractice = state.lastPractice;
     if (ne.type === 'time') {
+      if (memo) ne.memo = memo;
       var practice = barPractice.get();
       if (!practice) {
         // 2026.11.17 Ver.4.2 変更：入力欄のすぐ上に赤字で表示し、練習の選択欄を赤枠にする（トーストはキーボードの裏に隠れることがあるため）
@@ -2031,7 +2116,16 @@ body.editingRow #bar { display: none; }
     ne.createdAt = Date.now();
     ne.updatedAt = null;
     p.entries.push(ne);
-    save();
+    if (!save()) {
+      p.entries.pop();
+      state.lastPractice = previousPractice;
+      return;
+    }
+    entryMemo.blur();
+    entryMemo.value = '';
+    entryMemo.hidden = true;
+    memoBtn.setAttribute('aria-expanded', 'false');
+    showTimeKeys(false);
     syncBarPractice();
     rules.reset();
     editing = null;
@@ -2081,7 +2175,7 @@ body.editingRow #bar { display: none; }
   // 2026.11.13 追加：JSONを既存データへ安全に統合する。
   // ノートID・記録IDで同一データを判定し、同じJSONの再読み込みによる重複を防ぐ。
   function entryContentKey(e) {
-    return [e.type || '', e.text || '', (e.ms === undefined ? '' : e.ms)].join('|');
+    return [e.type || '', e.text || '', (e.ms === undefined ? '' : e.ms), e.memo || ''].join('|');
   }
 
   // 2026.11.18 Ver.4.9 追加：読み込んだ記録を、作成時刻（createdAt）に合わせて既存の記録の間に差し込む。
@@ -2201,21 +2295,17 @@ body.editingRow #bar { display: none; }
     var f = $('importFile').files[0];
     if (!f) return;
     var r = new FileReader();
-    r.onload = function () {
+    r.onload = async function () {
+      $('importBtn').disabled = true;
+      var previousState = state;
+      var previousDate = selectedDate;
       try {
         var imported = JSON.parse(r.result);
         if (!imported || !Array.isArray(imported.pages)) throw new Error('形式が違います');
         if (!confirm('読み込んだノートを現在のデータに追加・統合します。\n既存のノートは削除しません。よろしいですか？')) return;
         // 2026.11.16 追加：旧形式（Ver.2.5以前）のファイルは、読み込み時に新形式へ変換する
         migrateData(imported);
-        // 2026.11.16 Ver.4.0 追加：バックアップに入っている写真を、この端末に保存する
-        var importedPhotos = (imported.photos && typeof imported.photos === 'object') ? imported.photos : {};
-        Object.keys(importedPhotos).forEach(function (pid) {
-          var data = importedPhotos[pid];
-          if (typeof data !== 'string' || data.indexOf('data:image/') !== 0) return;
-          photoCache[pid] = data;
-          putPhoto(pid, data).catch(function () { toast('写真の一部を保存できませんでした'); });
-        });
+        state = JSON.parse(JSON.stringify(previousState));
         var result = mergeImportedData(imported);
         // 読み込み後は、追加されたノートがあればその日付を表示する。
         if (imported.current) {
@@ -2234,16 +2324,53 @@ body.editingRow #bar { display: none; }
           state.current = dayPage ? dayPage.id : null;
         }
         state.selectedDate = selectedDate;
-        save();
+        state.schema = SCHEMA;
+        try {
+          localStorage.setItem(KEY, JSON.stringify(state));
+        } catch (err) {
+          state = previousState;
+          selectedDate = previousDate;
+          toast('読み込めませんでした：記録を保存できません（容量不足など）');
+          return;
+        }
+        previousState = null;
+
+        var importedPhotos = (imported.photos && typeof imported.photos === 'object') ? imported.photos : {};
+        var failedPhotos = 0;
+        await Promise.all(Object.keys(importedPhotos).map(async function (pid) {
+          var data = importedPhotos[pid];
+          if (typeof data !== 'string' || data.indexOf('data:image/') !== 0) {
+            failedPhotos++;
+            return;
+          }
+          try {
+            await putPhoto(pid, data);
+            photoCache[pid] = data;
+          } catch (err) {
+            failedPhotos++;
+          }
+        }));
+
         renderAll(true);
-        toast('読み込みました：ノート' + result.pages + '件・記録' + result.entries + '件を追加');
+        var summary = 'ノート' + result.pages + '件・記録' + result.entries + '件を追加';
+        toast(failedPhotos
+          ? summary + '。写真' + failedPhotos + '枚を保存できませんでした'
+          : '読み込みました：' + summary);
         if (result.conflicts) {
           setTimeout(function () { toast('同じIDで内容が異なる記録 ' + result.conflicts + '件は、別記録として残しました'); }, 2300);
         }
       } catch (err) {
-        toast('読み込めませんでした：' + err.message);
+        if (previousState) {
+          state = previousState;
+          selectedDate = previousDate;
+          toast('読み込めませんでした：' + err.message);
+        } else {
+          toast('記録は保存しましたが、読み込み後の処理でエラーが発生しました');
+        }
+      } finally {
+        $('importFile').value = '';
+        $('importBtn').disabled = false;
       }
-      $('importFile').value = '';
     };
     r.readAsText(f);
   });
