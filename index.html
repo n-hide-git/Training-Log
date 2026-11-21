@@ -1,3 +1,4 @@
+<!-- 2026.11.22 Ver.5.3 写真のコメントと単独のメモを一覧で区別 -->
 <!-- 2026.11.22 Ver.5.2 写真とメモを同じ記録として編集 -->
 <!-- 2026.11.20 Ver.5.1 タイム専用の数字キーと日本語メモ欄を追加 -->
 <!-- 2026.11.18 Ver.5.0 名前機能を追加：起動時に「あなたの名前」を聞く（2回目からは保持されOKだけ）／ページに名前を持たせ「○○さんの記録」と表示／同じ日付・同じ場所でも人が違えば別ページ -->
@@ -307,6 +308,14 @@ body.editingRow #bar { display: none; }
 }
 #timeKeys:not([hidden]) { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 #bar #timeKeys button { padding: 0; font-size: 18px; }
+.entry.photo figure {
+  margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px;
+}
+.entry.photo figcaption { padding: 8px 10px; background: #F2F5F8; }
+.entry .noteLabel {
+  display: block; margin-bottom: 3px; color: #4B5563;
+  font-size: 12px; font-weight: 700; line-height: 1.4;
+}
 .entry .attachedMemo {
   margin: 4px 0 2px; white-space: pre-wrap; overflow-wrap: anywhere;
   font-size: 17px; font-weight: 400; line-height: 1.5;
@@ -538,10 +547,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.2  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.3  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.2  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.3  nakaZ</span></div>
     <!-- 2026.11.18 Ver.5.0 追加：○○さんの記録 -->
     <div id="infoOwner" hidden></div>
     <div id="infoPractice"></div>
@@ -1671,7 +1680,11 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 変更：タイム行に練習内容のタグを表示
   function buildRow(p, e, isBest) {
     var row = el('div', 'entry ' + e.type + (isBest ? ' best' : ''));
-    var body = el('div', 'body', e.type === 'photo' ? '' : e.text);
+    var body = el('div', 'body', e.type === 'time' ? e.text : '');
+    if (e.type === 'memo') {
+      body.appendChild(el('span', 'noteLabel', 'メモ'));
+      body.appendChild(el('div', '', e.text));
+    }
     if (isBest) body.appendChild(el('span', 'badge', 'BEST'));
     if (e.type === 'time' && e.practice) body.appendChild(el('span', 'ptag', e.practice));
     // 写真はタップで拡大し、コメントは写真の下に表示する。
@@ -1679,10 +1692,18 @@ body.editingRow #bar { display: none; }
       var img = el('img', 'pimg');
       img.alt = '写真';
       img.addEventListener('click', function () { if (img.src) openPhotoView(img.src); });
-      body.appendChild(img);
+      var figure = el('figure');
+      figure.appendChild(img);
+      if (e.memo) {
+        var caption = el('figcaption');
+        caption.appendChild(el('span', 'noteLabel', '写真のコメント'));
+        caption.appendChild(el('div', 'attachedMemo', e.memo));
+        figure.appendChild(caption);
+      }
+      body.appendChild(figure);
       loadPhotoInto(img, e.photoId);
     }
-    if (e.memo) body.appendChild(el('div', 'attachedMemo', e.memo));
+    if (e.type === 'time' && e.memo) body.appendChild(el('div', 'attachedMemo', e.memo));
     var stamp = entryStamp(e);
     if (stamp) body.appendChild(el('span', 'stamp', stamp));
     if (e.type !== 'photo') {
