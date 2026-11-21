@@ -1,3 +1,4 @@
+<!-- 2026.11.22 Ver.5.2 写真とメモを同じ記録として編集 -->
 <!-- 2026.11.20 Ver.5.1 タイム専用の数字キーと日本語メモ欄を追加 -->
 <!-- 2026.11.18 Ver.5.0 名前機能を追加：起動時に「あなたの名前」を聞く（2回目からは保持されOKだけ）／ページに名前を持たせ「○○さんの記録」と表示／同じ日付・同じ場所でも人が違えば別ページ -->
 <!-- 2026.11.18 Ver.4.9 JSON読み込みで、読み込んだ記録だけを作成時刻に合わせて既存の記録の間に差し込む（既存の並びは変えない） -->
@@ -224,6 +225,7 @@ button { cursor: pointer; }
 .entry.best { background: rgba(242, 183, 5, 0.22); border-left: 4px solid var(--gold); }
 .entry.best .body { color: var(--gold-text); }
 .badge { margin-left: 8px; font-size: 12px; font-weight: 700; color: #1a1300; background: var(--gold); border-radius: 4px; padding: 1px 6px; vertical-align: middle; }
+.entry .photoEdit { width: 44px; font-size: 14px; white-space: nowrap; }
 .x { flex: none; width: 36px; height: 36px; background: transparent; border: none; color: var(--sub); font-size: 18px; }
 
 /* 2026.11.13 変更：行の修正・挿入エディタ */
@@ -305,7 +307,7 @@ body.editingRow #bar { display: none; }
 }
 #timeKeys:not([hidden]) { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 #bar #timeKeys button { padding: 0; font-size: 18px; }
-.entry.time .attachedMemo {
+.entry .attachedMemo {
   margin: 4px 0 2px; white-space: pre-wrap; overflow-wrap: anywhere;
   font-size: 17px; font-weight: 400; line-height: 1.5;
 }
@@ -536,10 +538,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.1  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.2  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.1  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.2  nakaZ</span></div>
     <!-- 2026.11.18 Ver.5.0 追加：○○さんの記録 -->
     <div id="infoOwner" hidden></div>
     <div id="infoPractice"></div>
@@ -1201,7 +1203,7 @@ body.editingRow #bar { display: none; }
     return min + '/' + pad2(sec) + '/' + ('00' + ms).slice(-3);
   }
   // 2026.11.13 変更：入力欄にタイムのルールを付ける（下の入力欄と修正欄で共用）
-  function attachRules(inp, pv, memoOnly) {
+  function attachRules(inp, pv) {
     var prev = inp.value;
     // 2026.11.13 変更：書いている間だけ入力欄を上下に広げる（画面の約35%まで）
     function grow() {
@@ -1226,7 +1228,7 @@ body.editingRow #bar { display: none; }
     });
 
     function show() {
-      var t = memoOnly ? null : parseTime(norm(inp.value));
+      var t = parseTime(norm(inp.value));
       pv.textContent = t ? '→ ' + t.text : '';
       pv.classList.remove('warn');
       grow();
@@ -1238,7 +1240,6 @@ body.editingRow #bar { display: none; }
     }
     // 2026.11.13 変更：日本語IME入力中のカーソル・変換状態を保護
     function apply() {
-      if (memoOnly) { show(); return; }
       var v = norm(inp.value);
       var why = liveCheck(v);
 
@@ -1368,7 +1369,7 @@ body.editingRow #bar { display: none; }
       memoInput.value = initialMemo;
     }
     var pv = el('div', 'epreview');
-    var rules = attachRules(inp, pv, initialMemo === undefined && initial !== '');
+    var rules = attachRules(inp, pv);
     var pc = buildPracticeControl(practiceInit || '');
     // 2026.11.17 Ver.4.2 追加：ボタンの処理へ渡す、メッセージ表示用の道具（入力欄のすぐ下に赤字／練習の選択欄を赤枠）
     var ui = {
@@ -1417,7 +1418,7 @@ body.editingRow #bar { display: none; }
       toast('空欄は保存できません（削除は ✕ で）');
       return false;
     }
-    var terr = e.type === 'memo' ? '' : timeError(raw);
+    var terr = timeError(raw);
     if (terr) {
       if (ui) ui.warn(terr);
       toast(terr);
@@ -1425,8 +1426,8 @@ body.editingRow #bar { display: none; }
     }
     var idx = indexOfEntry(p, e.id);
     if (idx < 0) return false;
-    var ne = e.type === 'memo' ? { type: 'memo', text: raw, practice: '' } : buildEntry(raw);
-    if (e.type === 'time' && ne.type !== 'time') {
+    var ne = buildEntry(raw);
+    if (ne.type !== 'time') {
       ui.warn('タイムの形が違います（例：1/02/333）');
       return false;
     }
@@ -1450,7 +1451,113 @@ body.editingRow #bar { display: none; }
     return true;
   }
 
+  function buildPhotoMemoEditor(p, e) {
+    var form = el('form', 'editor');
+    var memo = el('textarea', 'editorMemo');
+    var originalMemo = e.type === 'photo' ? (e.memo || '') : e.text;
+    memo.value = originalMemo;
+    memo.rows = 3;
+    memo.lang = 'ja';
+    memo.placeholder = 'メモ';
+    memo.setAttribute('aria-label', 'メモ');
+
+    var file = el('input');
+    file.type = 'file';
+    file.accept = 'image/*';
+    file.hidden = true;
+    var attach = el('button', 'btn sub', '写真を付ける');
+    attach.type = 'button';
+    attach.addEventListener('click', function () { file.click(); });
+    var status = el('div', 'epreview');
+    status.setAttribute('role', 'status');
+    file.addEventListener('change', function () {
+      status.textContent = file.files.length ? '選択した写真を保存時に追加します' : '';
+    });
+
+    var actions = el('div', 'ebtns');
+    var submit = el('button', 'btn primary', '保存');
+    submit.type = 'submit';
+    actions.appendChild(submit);
+
+    function addAction(label, action) {
+      var button = el('button', 'btn sub', label);
+      button.type = 'button';
+      button.addEventListener('click', action);
+      actions.appendChild(button);
+    }
+
+    async function finish(nextMode) {
+      var text = memo.value.trim();
+      var image = file.files[0];
+      if (!image && !text && e.type === 'memo') {
+        status.textContent = 'メモを入力するか、写真を選んでください';
+        return;
+      }
+      if (image || text !== originalMemo) {
+        var updated = Object.assign({}, e, { updatedAt: Date.now() });
+        if (image) {
+          Array.prototype.forEach.call(form.elements, function (control) { control.disabled = true; });
+          status.textContent = '写真を保存中…';
+          try {
+            var data = await shrinkImage(image);
+            updated.photoId = 'ph' + uid();
+            await putPhoto(updated.photoId, data);
+            photoCache[updated.photoId] = data;
+          } catch (err) {
+            status.textContent = '写真を保存できませんでした';
+            Array.prototype.forEach.call(form.elements, function (control) { control.disabled = false; });
+            return;
+          }
+          updated.type = 'photo';
+          updated.text = '写真';
+        }
+        if (updated.type === 'photo') {
+          if (text) updated.memo = text;
+          else delete updated.memo;
+        } else {
+          updated.text = text;
+        }
+
+        var idx = indexOfEntry(p, e.id);
+        if (!form.isConnected || currentPage() !== p || p.entries[idx] !== e) {
+          if (image) releasePhoto(updated);
+          return;
+        }
+        p.entries[idx] = updated;
+        if (!save()) {
+          p.entries[idx] = e;
+          if (image) releasePhoto(updated);
+          status.textContent = '記録を保存できませんでした';
+          Array.prototype.forEach.call(form.elements, function (control) { control.disabled = false; });
+          return;
+        }
+      }
+      editing = nextMode ? { id: e.id, mode: nextMode } : null;
+      renderList();
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      finish(null);
+    });
+    if (indexOfEntry(p, e.id) === 0) {
+      addAction('この上に挿入', function () { finish('insertAbove'); });
+    }
+    addAction('この下に挿入', function () { finish('insert'); });
+    addAction('取消', function () { editing = null; renderList(); });
+
+    form.appendChild(memo);
+    if (e.type === 'memo') {
+      form.appendChild(file);
+      form.appendChild(attach);
+    }
+    form.appendChild(status);
+    form.appendChild(actions);
+    return form;
+  }
+
   function buildEditRow(p, e) {
+    if (e.type === 'photo' || e.type === 'memo') return buildPhotoMemoEditor(p, e);
     var orig = editText(e);
     var origPractice = e.practice || '';
     var origMemo = e.type === 'time' ? (e.memo || '') : undefined;
@@ -1567,7 +1674,7 @@ body.editingRow #bar { display: none; }
     var body = el('div', 'body', e.type === 'photo' ? '' : e.text);
     if (isBest) body.appendChild(el('span', 'badge', 'BEST'));
     if (e.type === 'time' && e.practice) body.appendChild(el('span', 'ptag', e.practice));
-    // 2026.11.16 Ver.4.0 追加：写真の行（タップで拡大。文字の修正はなし）
+    // 写真はタップで拡大し、コメントは写真の下に表示する。
     if (e.type === 'photo') {
       var img = el('img', 'pimg');
       img.alt = '写真';
@@ -1575,7 +1682,7 @@ body.editingRow #bar { display: none; }
       body.appendChild(img);
       loadPhotoInto(img, e.photoId);
     }
-    if (e.type === 'time' && e.memo) body.appendChild(el('div', 'attachedMemo', e.memo));
+    if (e.memo) body.appendChild(el('div', 'attachedMemo', e.memo));
     var stamp = entryStamp(e);
     if (stamp) body.appendChild(el('span', 'stamp', stamp));
     if (e.type !== 'photo') {
@@ -1596,8 +1703,15 @@ body.editingRow #bar { display: none; }
       renderList();
     });
     row.appendChild(body);
-    // 2026.11.16 Ver.4.1 追加：写真の行は修正できないので、右の「＋」で、この写真の下に挿入できるようにする
     if (e.type === 'photo') {
+      var edit = el('button', 'x photoEdit', '編集');
+      edit.type = 'button';
+      edit.setAttribute('aria-label', '写真のコメントを編集');
+      edit.addEventListener('click', function () {
+        editing = { id: e.id, mode: 'edit' };
+        renderList();
+      });
+      row.appendChild(edit);
       var plus = el('button', 'x plus', '＋');
       plus.type = 'button';
       plus.setAttribute('aria-label', 'この写真の下に挿入');
@@ -2175,7 +2289,7 @@ body.editingRow #bar { display: none; }
   // 2026.11.13 追加：JSONを既存データへ安全に統合する。
   // ノートID・記録IDで同一データを判定し、同じJSONの再読み込みによる重複を防ぐ。
   function entryContentKey(e) {
-    return [e.type || '', e.text || '', (e.ms === undefined ? '' : e.ms), e.memo || ''].join('|');
+    return JSON.stringify([e.type || '', e.text || '', e.ms, e.memo || '', e.photoId || '']);
   }
 
   // 2026.11.18 Ver.4.9 追加：読み込んだ記録を、作成時刻（createdAt）に合わせて既存の記録の間に差し込む。
