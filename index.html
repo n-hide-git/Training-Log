@@ -1,3 +1,4 @@
+<!-- 2026.11.22 Ver.5.5 写真を選んだ直後にコメントの有無を選択 -->
 <!-- 2026.11.22 Ver.5.4 コメント付き写真を濃い青の枠と背景で表示 -->
 <!-- 2026.11.22 Ver.5.3 写真のコメントと単独のメモを一覧で区別 -->
 <!-- 2026.11.22 Ver.5.2 写真とメモを同じ記録として編集 -->
@@ -260,6 +261,19 @@ body.editingRow #bar { display: none; }
 .entry.photo .body .pmiss { padding: 18px 10px; color: var(--sub); font-size: 14px; background: #eef2f6; border-radius: 8px; }
 #photoView { position: fixed; inset: 0; z-index: 50; background: rgba(10, 14, 20, .94); display: flex; flex-direction: column; }
 #photoView[hidden] { display: none; }
+#photoDraft {
+  width: min(440px, calc(100% - 24px)); max-height: calc(var(--photoViewport, 100dvh) - 24px);
+  padding: 14px; border: 1px solid var(--line); border-radius: 12px;
+  color: var(--text); background: #fff; overscroll-behavior: contain;
+}
+#photoDraft::backdrop { background: rgba(10, 14, 20, .68); }
+#photoDraft h2 { margin: 0 0 10px; font-size: 19px; }
+#photoDraftImg { display: block; width: 100%; height: min(220px, 30dvh); object-fit: contain; background: #edf2f7; border-radius: 6px; }
+#photoDraftForm.writing #photoDraftImg { height: min(130px, 24dvh); }
+#photoDraftActions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+#photoDraftActions .btn { min-height: 44px; flex: 1 1 auto; }
+#photoDraftMemo { margin-top: 10px; }
+#photoDraftStatus { margin-top: 6px; font-size: 14px; }
 #photoViewScroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; display: flex; align-items: flex-start; justify-content: center; }
 #photoViewImg { max-width: 100%; max-height: 100%; margin: auto; object-fit: contain; cursor: zoom-in; }
 #photoViewImg.full { max-width: none; max-height: none; width: auto; margin: 0; cursor: zoom-out; }
@@ -550,10 +564,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.4  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.5  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.4  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.5  nakaZ</span></div>
     <!-- 2026.11.18 Ver.5.0 追加：○○さんの記録 -->
     <div id="infoOwner" hidden></div>
     <div id="infoPractice"></div>
@@ -646,6 +660,20 @@ body.editingRow #bar { display: none; }
 </div>
 <!-- 2026.11.16 Ver.4.0 追加：写真の選択（隠し入力）と拡大表示 -->
 <input id="photoFile" type="file" accept="image/*" hidden>
+<dialog id="photoDraft" aria-labelledby="photoDraftTitle">
+  <form id="photoDraftForm">
+    <h2 id="photoDraftTitle">コメントを付けますか？</h2>
+    <img id="photoDraftImg" alt="追加する写真のプレビュー">
+    <textarea id="photoDraftMemo" class="editorMemo" rows="2" lang="ja" aria-label="写真のコメント" placeholder="写真のコメント" hidden></textarea>
+    <div id="photoDraftActions">
+      <button id="photoDraftWrite" class="btn" type="button" autofocus>コメントを書く</button>
+      <button id="photoDraftOnly" class="btn sub" type="button">写真だけ保存</button>
+      <button id="photoDraftSave" class="btn" type="submit" hidden>写真とコメントを保存</button>
+      <button id="photoDraftCancel" class="btn sub" type="button">取消</button>
+    </div>
+    <div id="photoDraftStatus" role="status"></div>
+  </form>
+</dialog>
 <div id="photoView" hidden>
   <button id="photoViewClose" type="button" aria-label="閉じる">✕</button>
   <div id="photoViewHint">タップで 原寸／全体 を切り替え</div>
@@ -908,29 +936,108 @@ body.editingRow #bar { display: none; }
     });
   }
 
-  // 写真を1枚選ぶ（スマホではカメラ撮影／ライブラリから選択）。選んだら cb(記録) を呼ぶ
+  // 撮影・ライブラリから選んだ画像を、プレビューで確認してから保存する。
   var photoCb = null;
+  var photoDraft = $('photoDraft');
+  var photoDraftForm = $('photoDraftForm');
+  var photoDraftMemo = $('photoDraftMemo');
+  var photoDraftStatus = $('photoDraftStatus');
+  var pendingPhoto = null;
+  var savingPhoto = false;
+
   function pickPhoto(cb) {
     photoCb = cb;
     $('photoFile').value = '';
     $('photoFile').click();
   }
-  $('photoFile').addEventListener('change', function () {
-    var f = this.files && this.files[0];
+
+  function sizePhotoDraft() {
+    if (window.visualViewport) {
+      photoDraft.style.setProperty('--photoViewport', window.visualViewport.height + 'px');
+    }
+  }
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', sizePhotoDraft);
+
+  $('photoFile').addEventListener('change', async function () {
+    var file = this.files && this.files[0];
     var cb = photoCb;
     photoCb = null;
-    if (!f || !cb) return;
+    if (!file || !cb) return;
     toast('写真を取り込み中…');
-    shrinkImage(f).then(function (data) {
-      var pid = 'ph' + uid();
-      return putPhoto(pid, data).then(function () {
-        photoCache[pid] = data;
-        toast('写真を追加しました');
-        cb({ id: uid(), type: 'photo', photoId: pid, text: '写真', practice: '', createdAt: Date.now(), updatedAt: null });
-      });
-    }).catch(function (err) {
-      toast('写真を保存できませんでした：' + ((err && err.message) || ''));
-    });
+    try {
+      var data = await shrinkImage(file);
+      if (photoDraft.open) return;
+      pendingPhoto = { data: data, add: cb };
+      photoDraftForm.reset();
+      photoDraftForm.classList.remove('writing');
+      photoDraftMemo.hidden = $('photoDraftSave').hidden = true;
+      $('photoDraftWrite').hidden = $('photoDraftOnly').hidden = false;
+      photoDraftStatus.textContent = '';
+      $('photoDraftImg').src = data;
+      sizePhotoDraft();
+      photoDraft.showModal();
+    } catch (err) {
+      toast('写真を読み込めませんでした');
+    }
+  });
+
+  $('photoDraftWrite').addEventListener('click', function () {
+    photoDraftForm.classList.add('writing');
+    photoDraftMemo.hidden = $('photoDraftSave').hidden = false;
+    $('photoDraftWrite').hidden = $('photoDraftOnly').hidden = true;
+    photoDraftMemo.focus();
+  });
+
+  photoDraft.addEventListener('cancel', function (event) {
+    if (savingPhoto) event.preventDefault();
+  });
+  $('photoDraftCancel').addEventListener('click', function () { photoDraft.close(); });
+  photoDraft.addEventListener('close', function () {
+    if (photoDraft.open) return;
+    pendingPhoto = null;
+    $('photoDraftImg').removeAttribute('src');
+  });
+
+  async function savePhotoDraft(memo) {
+    if (!pendingPhoto || savingPhoto) return;
+    var draft = pendingPhoto;
+    var pid = 'ph' + uid();
+    var entry = { id: uid(), type: 'photo', photoId: pid, text: '写真', practice: '', createdAt: Date.now(), updatedAt: null };
+    if (memo) entry.memo = memo;
+    savingPhoto = true;
+    Array.prototype.forEach.call(photoDraftForm.elements, function (control) { control.disabled = true; });
+    photoDraftStatus.textContent = '写真を保存中…';
+    try {
+      await putPhoto(pid, draft.data);
+      photoCache[pid] = draft.data;
+      if (!draft.add(entry)) {
+        releasePhoto(entry);
+        photoDraftStatus.textContent = '記録を保存できませんでした';
+        return;
+      }
+      photoDraft.close();
+      toast(memo ? '写真とコメントを追加しました' : '写真を追加しました');
+    } catch (err) {
+      photoDraftStatus.textContent = '写真を保存できませんでした';
+    } finally {
+      savingPhoto = false;
+      Array.prototype.forEach.call(photoDraftForm.elements, function (control) { control.disabled = false; });
+    }
+  }
+  $('photoDraftOnly').addEventListener('click', function () { savePhotoDraft(''); });
+  photoDraftForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (!photoDraftMemo.hidden) {
+      var memo = photoDraftMemo.value.trim();
+      if (memo) savePhotoDraft(memo);
+      else {
+        photoDraftStatus.textContent = 'コメントを入力してください';
+        photoDraftMemo.focus();
+      }
+    }
+  });
+  $('photoDraftActions').addEventListener('mousedown', function (event) {
+    if (event.target.closest('button')) event.preventDefault();
   });
 
   function loadPhotoInto(img, photoId, holder) {
@@ -967,16 +1074,21 @@ body.editingRow #bar { display: none; }
   });
   // 下の入力欄の 📷：記録の流れの最後に追加する（キーボードは出さない）
   $('photoBtn').addEventListener('click', function () {
+    var p = currentPage();
+    if (!p) return;
     pickPhoto(function (pe) {
-      var p = currentPage();
-      if (!p) return;
+      if (currentPage() !== p) return false;
       p.entries.push(pe);
-      save();
+      if (!save()) {
+        p.entries.pop();
+        return false;
+      }
       editing = null;
       renderList();
       main.scrollTop = main.scrollHeight;
       setTimeout(function () { main.scrollTop = main.scrollHeight; }, 300);
       setTimeout(function () { main.scrollTop = main.scrollHeight; }, 900);
+      return true;
     });
   });
 
@@ -1667,13 +1779,18 @@ body.editingRow #bar { display: none; }
     pbtn.addEventListener('click', function () {
       pickPhoto(function (pe) {
         var idx = indexOfEntry(p, e.id);
-        if (idx < 0) return;
+        if (idx < 0 || currentPage() !== p) return false;
         var keep = main.scrollTop;
-        p.entries.splice(above ? idx : idx + 1, 0, pe);
-        save();
+        var position = above ? idx : idx + 1;
+        p.entries.splice(position, 0, pe);
+        if (!save()) {
+          p.entries.splice(position, 1);
+          return false;
+        }
         editing = null;
         renderList();
         main.scrollTop = keep;
+        return true;
       });
     });
     insForm.querySelector('.erow').insertBefore(pbtn, insForm.querySelector('textarea'));
