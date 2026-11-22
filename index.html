@@ -1,3 +1,4 @@
+<!-- 2026.11.22 Ver.5.8 記録時刻の変更画面に変更前の時刻を表示 -->
 <!-- 2026.11.22 Ver.5.7 記録時刻を変更して一覧の位置を調整 -->
 <!-- 2026.11.22 Ver.5.6 写真の編集からコメント修正と記録挿入を選択 -->
 <!-- 2026.11.22 Ver.5.5 写真を選んだ直後にコメントの有無を選択 -->
@@ -224,6 +225,7 @@ button { cursor: pointer; }
   border: 0; border-radius: 5px; background: #EDF2F7; color: #334E68;
   font-size: 13px; text-decoration: underline;
 }
+.timeEditor .previousTime { margin: 0 0 10px; color: #334E68; font-size: 15px; font-weight: 600; }
 .timeEditor label { display: block; margin-bottom: 6px; font-weight: 600; }
 .timeEditor input { min-height: 44px; padding: 6px; font: inherit; }
 /* 2026.11.16 追加：タイム行の練習内容タグ */
@@ -573,10 +575,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.7  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.8  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.7  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.8  nakaZ</span></div>
     <!-- 2026.11.18 Ver.5.0 追加：○○さんの記録 -->
     <div id="infoOwner" hidden></div>
     <div id="infoPractice"></div>
@@ -1811,13 +1813,17 @@ body.editingRow #bar { display: none; }
   // 2026.11.16 変更：タイム行に練習内容のタグを表示
   function buildTimeEditor(p, e) {
     var form = el('form', 'editor timeEditor');
-    var label = el('label', '', '記録時刻');
+    var originalTime = entryStamp(e);
+    var reference = el('p', 'previousTime', '変更前の時刻 ' + (originalTime || '未設定'));
+    reference.id = 'previousRecordTime';
+    var label = el('label', '', '変更後の時刻');
     label.htmlFor = 'editRecordTime';
     var input = el('input');
     input.id = label.htmlFor;
     input.type = 'time';
     input.required = true;
-    input.value = entryStamp(e);
+    input.value = originalTime;
+    input.setAttribute('aria-describedby', reference.id);
     var actions = el('div', 'ebtns');
     var submit = el('button', 'btn primary', '保存');
     submit.type = 'submit';
@@ -1828,7 +1834,7 @@ body.editingRow #bar { display: none; }
       event.preventDefault();
       var value = input.value;
       if (!validRecordTime(value)) return;
-      if (value !== entryStamp(e)) {
+      if (value !== originalTime) {
         var idx = indexOfEntry(p, e.id);
         if (idx < 0 || currentPage() !== p) return;
         var previous = p.entries;
@@ -1846,6 +1852,7 @@ body.editingRow #bar { display: none; }
     });
     actions.appendChild(submit);
     actions.appendChild(cancel);
+    form.appendChild(reference);
     form.appendChild(label);
     form.appendChild(input);
     form.appendChild(actions);
