@@ -1,3 +1,4 @@
+<!-- 2026.11.22 Ver.5.6 写真の編集からコメント修正と記録挿入を選択 -->
 <!-- 2026.11.22 Ver.5.5 写真を選んだ直後にコメントの有無を選択 -->
 <!-- 2026.11.22 Ver.5.4 コメント付き写真を濃い青の枠と背景で表示 -->
 <!-- 2026.11.22 Ver.5.3 写真のコメントと単独のメモを一覧で区別 -->
@@ -254,7 +255,8 @@ button { cursor: pointer; }
 /* 2026.11.16 Ver.3.10 追加：修正・挿入中は下の入力セットを隠す */
 body.editingRow #bar { display: none; }
 /* 2026.11.16 Ver.4.1 追加：写真の行の「＋」ボタン */
-.x.plus { font-size: 22px; font-weight: 700; color: var(--accent); }
+.photoActions:not([hidden]) { display: grid; gap: 6px; margin-top: 8px; }
+.photoActions .btn { min-height: 44px; height: auto; padding: 8px; white-space: normal; }
 /* 2026.11.16 Ver.4.0 追加：写真の行と拡大表示 */
 .entry.photo { background: #ffffff; }
 .entry.photo .body .pimg { display: block; width: 100%; max-height: 38vh; min-height: 70px; object-fit: contain; background: #eef2f6; border-radius: 8px; cursor: zoom-in; -webkit-touch-callout: default; }
@@ -489,7 +491,6 @@ body.editingRow #bar { display: none; }
 /* メモ：灰色の線 */
 .entry.memo { background: #F7F8FA; border-left: 4px solid #9AA3AE; }
 .entry.memo .body { color: var(--carbon-2); }
-.x.plus { color: var(--carbon); }
 /* 修正・挿入の欄 */
 .editor { background: rgba(21, 24, 29, 0.05); }
 .editor textarea { background: #FFFFFF; border: 2px solid var(--carbon); }
@@ -564,10 +565,10 @@ body.editingRow #bar { display: none; }
 <!-- 本文 -->
 <main id="main">
   <!-- 2026.11.16 変更：文言を日付×場所に合わせた -->
-  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.5  nakaZ</span></div>
+  <div id="empty"><span id="emptyMessage">まだ記録がありません。<br>「＋新規」から、日付と場所のページを作成してください。</span><span id="emptyVer">Ver.5.6  nakaZ</span></div>
   <section id="info" hidden>
     <!-- 2026.11.16 変更：バージョン表示 Ver.3.0 -->
-    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.5  nakaZ</span></div>
+    <div id="infoHead"><span id="infoDate"></span><span id="ver">Ver.5.6  nakaZ</span></div>
     <!-- 2026.11.18 Ver.5.0 追加：○○さんの記録 -->
     <div id="infoOwner" hidden></div>
     <div id="infoPractice"></div>
@@ -1847,20 +1848,31 @@ body.editingRow #bar { display: none; }
     if (e.type === 'photo') {
       var edit = el('button', 'x photoEdit', '編集');
       edit.type = 'button';
-      edit.setAttribute('aria-label', '写真のコメントを編集');
-      edit.addEventListener('click', function () {
+      edit.setAttribute('aria-label', '写真の編集操作を選ぶ');
+      edit.setAttribute('aria-expanded', 'false');
+      var actions = el('div', 'photoActions');
+      actions.hidden = true;
+      var captionButton = el('button', 'btn sub', e.memo ? '写真のコメントを直す' : '写真のコメントを書く');
+      captionButton.type = 'button';
+      captionButton.addEventListener('click', function () {
         editing = { id: e.id, mode: 'edit' };
         renderList();
       });
-      row.appendChild(edit);
-      var plus = el('button', 'x plus', '＋');
-      plus.type = 'button';
-      plus.setAttribute('aria-label', 'この写真の下に挿入');
-      plus.addEventListener('click', function () {
+      var insertButton = el('button', 'btn sub', '写真の下に記録を挿入');
+      insertButton.type = 'button';
+      insertButton.addEventListener('click', function () {
         editing = { id: e.id, mode: 'insert' };
         renderList();
       });
-      row.appendChild(plus);
+      actions.appendChild(captionButton);
+      actions.appendChild(insertButton);
+      edit.addEventListener('click', function () {
+        actions.hidden = !actions.hidden;
+        edit.setAttribute('aria-expanded', String(!actions.hidden));
+        if (!actions.hidden) captionButton.focus();
+      });
+      body.appendChild(actions);
+      row.appendChild(edit);
     }
     row.appendChild(x);
     return row;
